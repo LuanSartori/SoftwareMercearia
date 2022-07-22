@@ -1,0 +1,22 @@
+[
+    {
+        "id": 0,
+        "categoria": "frutas"
+    },
+    {
+        "id": 1,
+        "categoria": "carnes"
+    },
+    {
+        "id": 2,
+        "categoria": "derivados do leite"
+    },
+    {
+        "id": 3,
+        "categoria": "gluten"
+    },
+    {
+        "id": 4,
+        "categoria": "verduras"
+    }
+]
