@@ -1,2 +1,8 @@
-# software_mercearia
- Um software usado para gerenciar uma mercearia, com funções para cadastrar/remover funcionários, clientes e produtos, relatórios de vendas por data, tudo pelo terminal.
+<h1>Software de Gerenciamento de Mercearia</h1>
+<p>Um software usado para gerenciar uma mercearia através do terminal, com as funções de:</p>
+<ul>
+    <li>Cadastrar / alterar / remover:
+    <ul>
+        <li>Categoria
+    </ul>
+</ul>
