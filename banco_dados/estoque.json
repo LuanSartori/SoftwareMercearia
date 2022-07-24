@@ -1,0 +1,41 @@
+[
+    [
+        {
+            "index": 1,
+            "id_categoria": 0,
+            "categoria": "nenhum"
+        },
+        {
+            "index": 2,
+            "id_categoria": 1,
+            "categoria": "frutas"
+        }
+    ],
+    {
+        "categoria": "nenhum",
+        "produtos": [
+            {
+                "id": 0,
+                "id_categoria": 0,
+                "nome": "Leite UTH Integral 1L",
+                "marca": "Bonolat",
+                "preco": 5.5,
+                "quantidada": 50,
+                "id_fornecedor": 0
+            },
+            {
+                "id": 1,
+                "id_categoria": 0,
+                "nome": "Leite em P\u00c3\u00b3 Lata 1KG",
+                "marca": "Nestle",
+                "preco": 5.99,
+                "quantidada": 30,
+                "id_fornecedor": 0
+            }
+        ]
+    },
+    {
+        "categoria": "frutas",
+        "produtos": []
+    }
+]

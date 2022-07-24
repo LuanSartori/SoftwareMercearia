@@ -1,6 +1,18 @@
 {
     "id_categoria": {
         "novo_id": 5,
-        "ids_vazios": []
+        "ids_vazios": [
+            2,
+            3,
+            4
+        ]
+    },
+    "index_categoria": {
+        "novo_index": 6,
+        "index_vazios": [
+            3,
+            4,
+            5
+        ]
     }
 }
