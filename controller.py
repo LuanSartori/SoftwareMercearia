@@ -1,6 +1,6 @@
 # recebe dados, os valida e passa para o dal.py
 
-from model import Categoria, Estoque
+from model import Categoria, Produto
 from dal import CategoriaDal, EstoqueDal
 
 
@@ -24,7 +24,7 @@ class CategoriaController():
 
         if CategoriaDal.pesquisar_arquivo(codigo, 'categoria', categoria):
             raise IdError(False, 'Já existe uma categoria com esse nome')
-        if len(categoria) > 20:
+        if len(categoria) > 30:
             raise IdError(False, 'Esse nome é muito grande!')
         
         
@@ -69,6 +69,39 @@ class CategoriaController():
         return CategoriaDal.remover(id_categoria, i, codigo, codigo_estoque)
 
 
-categoria = str(input('Nome da categoria: ')).lower()
-id = int(input('ID da categoria: '))
-CategoriaController.alterar(id, categoria)
+class EstoqueController:
+    @staticmethod
+    def cadastrar_produto(id_categoria: int, nome: str, marca: str, preco: float, quantidade: int=None, id_fornecedor: int=None):
+        codigo = CategoriaDal.ler_arquivo()
+        codigo_estoque = EstoqueDal.ler_arquivo()
+        if not codigo or not codigo_estoque:
+            raise ServerError('Não foi possível acessar o banco de dados!')
+        
+        if len(nome) > 40 or len(marca) > 30:
+            raise ValueError('Este nome é grande demais')
+        elif not CategoriaDal.pesquisar_arquivo('id', id_categoria, codigo):
+            raise IdError('Está categoria não existe!')
+        
+        id = EstoqueDal.gerar_id()
+        
+        produto = Produto(id, id_categoria, nome, marca, preco, quantidade, id_fornecedor)
+        return EstoqueDal.cadastrar_produto(produto, codigo_estoque)
+
+
+    @staticmethod
+    def alterar_produto(id_produto:int, id_categoria_atual: int, id_categoria=None, nome=None, marca=None, preco=None, quantidade=None, id_fornecedor=None):
+        codigo = CategoriaDal.ler_arquivo()
+        codigo_estoque = EstoqueDal.ler_arquivo()
+        if not codigo or not codigo_estoque:
+            raise ServerError('Não foi possível acessar o banco de dados!')
+
+        if not EstoqueDal.ler_produto(id_categoria_atual, id_produto, codigo_estoque, True):
+            raise IdError('Não existe uma produto com esse ID', id_produto)
+        if not CategoriaDal.pesquisar_arquivo('id', str(id_categoria_atual), codigo):
+            raise IdError('Não existe uma categoria com esse ID', id_categoria_atual)
+        
+        if nome != None and len(nome) > 40 or marca != None and len(marca) > 30:
+            raise ValueError('Este nome é grande demais')
+        
+        
+        return EstoqueDal.alterar_produto(id_produto, id_categoria_atual, codigo_estoque, id_categoria=id_categoria, nome=nome, marca=marca, preco=preco, quantidade=quantidade, id_fornecedor=id_fornecedor)

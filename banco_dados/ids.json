@@ -2,5 +2,9 @@
     "id_categoria": {
         "novo_id": 2,
         "ids_vazios": []
+    },
+    "id_produto": {
+        "novo_id": 1,
+        "ids_vazios": []
     }
 }

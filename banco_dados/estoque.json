@@ -1,39 +1,20 @@
 [
     {
         "id": 0,
-        "categoria": "nenhum",
-        "produtos": [
-            {
-                "id": 0,
-                "id_categoria": 0,
-                "nome": "Leite UTH Integral 1L",
-                "marca": "Bonolat",
-                "preco": 5.5,
-                "quantidade": 50,
-                "id_fornecedor": 0
-            },
-            {
-                "id": 1,
-                "id_categoria": 0,
-                "nome": "Leite em P\u00c3\u00b3 Lata 1KG",
-                "marca": "Nestle",
-                "preco": 5.99,
-                "quantidade": 30,
-                "id_fornecedor": 0
-            }
-        ]
+        "categoria": "nenhuma",
+        "produtos": []
     },
     {
         "id": 1,
         "categoria": "frutas",
         "produtos": [
             {
-                "id": 2,
-                "id_categoria": 0,
-                "nome": "Lagosta Adulta 1Kg",
-                "marca": "Lagoste",
-                "preco": 55.99,
-                "quantidade": 30,
+                "id": 0,
+                "id_categoria": 1,
+                "nome": "Ma\u00e7a | Pacote 5 Unidades",
+                "marca": "Nestle",
+                "preco": 5.59,
+                "quantidade": 15,
                 "id_fornecedor": 0
             }
         ]
