@@ -1,7 +1,7 @@
-# recebe dados, os valida e passa para o dal.py
+from model import Categoria, Produto, Fornecedor
+from dal import CategoriaDal, EstoqueDal, FornecedorDal
 
-from model import Categoria, Produto
-from dal import CategoriaDal, EstoqueDal
+from utils import cnpj_valido, email_valido, telefone_valido
 
 
 class IdError(Exception):
@@ -61,12 +61,14 @@ class CategoriaController():
         if not codigo or not codigo_estoque:
             raise ServerError('Não foi possível acessar o banco de dados!')
             
-        i = CategoriaDal.pesquisar_arquivo(codigo, 'id', str(id_categoria) )
-        if not i:
+        index = CategoriaDal.pesquisar_arquivo(codigo, 'id', str(id_categoria) )
+        if not index:
             raise IdError('Não existe uma categoria com esse ID', id_categoria)
         
+        if id_categoria == 0:
+            raise ValueError(f'Não é possível remover a categoria "Nenhuma"')
 
-        return CategoriaDal.remover(id_categoria, i, codigo, codigo_estoque)
+        return CategoriaDal.remover(id_categoria, index, codigo, codigo_estoque)
 
 
 class EstoqueController:
@@ -82,6 +84,11 @@ class EstoqueController:
         elif not CategoriaDal.pesquisar_arquivo('id', id_categoria, codigo):
             raise IdError('Está categoria não existe!')
         
+        index = EstoqueDal.pesquisar_arquivo(codigo, produto.id_categoria)
+        for p in codigo[index]['produtos']:
+            if p['nome'] == nome:
+                raise ValueError('Já existe um produto com esse nome')
+
         id = EstoqueDal.gerar_id()
         
         produto = Produto(id, id_categoria, nome, marca, preco, quantidade, id_fornecedor)
@@ -89,7 +96,7 @@ class EstoqueController:
 
 
     @staticmethod
-    def alterar_produto(id_produto:int, id_categoria_atual: int, id_categoria=None, nome=None, marca=None, preco=None, quantidade=None, id_fornecedor=None):
+    def alterar_produto(id_produto:int, id_categoria_atual: int, **kwargs):
         codigo = CategoriaDal.ler_arquivo()
         codigo_estoque = EstoqueDal.ler_arquivo()
         if not codigo or not codigo_estoque:
@@ -100,8 +107,48 @@ class EstoqueController:
         if not CategoriaDal.pesquisar_arquivo('id', str(id_categoria_atual), codigo):
             raise IdError('Não existe uma categoria com esse ID', id_categoria_atual)
         
-        if nome != None and len(nome) > 40 or marca != None and len(marca) > 30:
+        if kwargs.get('nome') != None and len(kwargs.get('nome')) > 40 or kwargs.get('marca') != None and len(kwargs.get('marca')) > 30:
             raise ValueError('Este nome é grande demais')
         
         
-        return EstoqueDal.alterar_produto(id_produto, id_categoria_atual, codigo_estoque, id_categoria=id_categoria, nome=nome, marca=marca, preco=preco, quantidade=quantidade, id_fornecedor=id_fornecedor)
+        return EstoqueDal.alterar_produto(id_produto, id_categoria_atual, codigo_estoque, **kwargs)
+
+
+    @staticmethod
+    def remover_produto(id_produto: int, id_categoria: int):
+        codigo = CategoriaDal.ler_arquivo()
+        codigo_estoque = EstoqueDal.ler_arquivo()
+        if not codigo or not codigo_estoque:
+            raise ServerError('Não foi possível acessar o banco de dados!')
+        
+        if not EstoqueDal.ler_produto(id_categoria, id_produto, codigo_estoque, True):
+            raise IdError('Não existe uma produto com esse ID', id_produto)
+        if not CategoriaDal.pesquisar_arquivo('id', str(id_categoria), codigo):
+            raise IdError('Não existe uma categoria com esse ID', id_categoria)
+        
+        return EstoqueDal.remover_produto(id_produto, id_categoria, codigo_estoque)
+
+
+class FornecedorController:
+    @staticmethod
+    def cadastrar(nome: str, telefone: str, email: str, cnpj: str):
+        codigo = FornecedorDal.ler_arquivo()
+        if not codigo:
+            raise ServerError('Não foi possível acessar o banco de dados!')
+
+        if (not nome) or 5 > len(nome) > 50:
+            raise ValueError('Nome inválido!')
+
+        telefone = telefone_valido(telefone)
+        if not telefone:
+            raise ValueError('Telefone inválido!')
+
+        if not email_valido(email):
+            raise ValueError('Email inválido!')
+
+        if not cnpj_valido(cnpj):
+            raise ValueError('CNPJ inválido!')
+        
+        id = FornecedorDal.gerar_id()
+        fornecedor = Fornecedor(id, nome, telefone, email, cnpj)
+        return FornecedorDal.cadastrar(fornecedor, codigo)

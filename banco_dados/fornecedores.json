@@ -1,0 +1,13 @@
+[
+    {
+        "id": 0,
+        "Nome": "Nenhum"
+    },
+    {
+        "id": 1,
+        "nome": "Albert Einsten",
+        "telefone": "+55 (19) 91234-5678",
+        "email": "einsten_genio@gmail.com",
+        "cnpj": "9999999999"
+    }
+]

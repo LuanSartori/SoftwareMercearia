@@ -1,5 +1,5 @@
 import json
-from model import Categoria, Produto
+from model import Categoria, Produto, Fornecedor
 
 
 class CategoriaDal:
@@ -33,9 +33,9 @@ class CategoriaDal:
 
     @staticmethod
     def pesquisar_arquivo(chave: str, valor: str, codigo: json):
-        for i, c in enumerate(codigo):
+        for index, c in enumerate(codigo):
             if str( c[chave] ) == str(valor):
-                return i
+                return index
         return False
 
 
@@ -68,15 +68,16 @@ class CategoriaDal:
     
 
     @staticmethod
-    def remover(id_categoria: int, i: int, codigo: json, codigo_estoque: json):
+    def remover(id_categoria: int, index: int, codigo: json, codigo_estoque: json):
         try:
             with open('banco_dados/categorias.json', 'w') as arq:
-                codigo.pop(i)
+                codigo.pop(index)
                 json.dump(codigo, arq, indent=4)
 
             with open('banco_dados/ids.json', 'r') as arq:
                 codigo = json.load(arq)
-                codigo['id_categoria']['ids_vazios'].insert(0, id_categoria)
+                codigo['id_categoria']['ids_vazios'].append(id_categoria)
+                codigo['id_categoria']['ids_vazios'].sort()
                 with open('banco_dados/ids.json', 'w') as arq:
                     json.dump(codigo, arq, indent=4)
                     EstoqueDal.remover_categoria(id_categoria, codigo_estoque)
@@ -148,20 +149,20 @@ class EstoqueDal:
      
 
     @staticmethod
-    def ler_produto(id_categoria: int, id_produto: int, codigo: json, retorna_obj=True) -> Produto:
+    def ler_produto(id_categoria: int, id_produto: int, codigo: json, retorna_obj=True) -> tuple:
         index = EstoqueDal.pesquisar_arquivo(codigo, id_categoria)
         produtos = codigo[index]['produtos']
         
         for i, p in enumerate(produtos):
             if p['id'] == id_produto:
                 if retorna_obj:
-                    return Produto(p['id'],
+                    return (i, Produto(p['id'],
                                    p['id_categoria'],
                                    p['nome'],
                                    p['marca'],
                                    p['preco'],
                                    p['quantidade'],
-                                   p['id_fornecedor'])
+                                   p['id_fornecedor']))
                 else:
                     return (i, p)
         return False
@@ -214,11 +215,11 @@ class EstoqueDal:
         i, produto = EstoqueDal.ler_produto(id_categoria_atual, id_produto, codigo, False)
 
         alteracao = {
-            'id_categoria': kwargs.get('id_categoria'),
-            'nome': kwargs.get('nome'),
-            'marca': kwargs.get('marca'),
-            'preco': kwargs.get('preco'),
-            'quantidade': kwargs.get('quantidade'),
+            'id_categoria':  kwargs.get('id_categoria'),
+            'nome':          kwargs.get('nome'),
+            'marca':         kwargs.get('marca'),
+            'preco':         kwargs.get('preco'),
+            'quantidade':    kwargs.get('quantidade'),
             'id_fornecedor': kwargs.get('id_fornecedor')
         }
 
@@ -240,3 +241,78 @@ class EstoqueDal:
                 return (True, 'Produto alterado com sucesso!')
         except:
             return (False, 'Não foi possível alterar o produto!')
+    
+
+    @staticmethod
+    def remover_produto(id_produto: int, id_categoria: int, codigo: json) -> tuple:
+        i, p = EstoqueDal.ler_produto(id_categoria, id_produto, codigo, False)
+        codigo[id_categoria]['produtos'].pop(i)
+        
+        try:
+            with open('banco_dados/estoque.json', 'w') as arq:
+                json.dump(codigo, arq, indent=4)
+            
+            with open('banco_dados/ids.json', 'r') as arq:
+                codigo = json.load(arq)
+                codigo['id_produto']['ids_vazios'].append(id_produto)
+                codigo['id_produto']['ids_vazios'].sort()
+                with open('banco_dados/ids.json', 'w') as arq:
+                    json.dump(codigo, arq, indent=4)
+                    return (True, 'Produto removido com sucesso!')
+        except:
+            return (False, 'Não foi possível remover o produto!')
+
+
+class FornecedorDal:
+    @staticmethod
+    def ler_arquivo():
+        try:
+            with open('banco_dados/fornecedores.json', 'r') as arq:
+                return json.load(arq)
+        except:
+            return False
+    
+
+    @staticmethod
+    def pesquisar_arquivo(codigo: json, id_fornecedor: int):
+        for i, c in enumerate(codigo):
+            if c['id'] == id_fornecedor:
+                return i
+    
+
+    @staticmethod
+    def gerar_id():
+        try:
+            with open('banco_dados/ids.json', 'r') as arq:
+                codigo = json.load(arq)
+                if len( codigo['id_fornecedor']['ids_vazios'] ) == 0:
+                    id = codigo['id_fornecedor']['novo_id']
+                    codigo['id_fornecedor']['novo_id'] += 1
+                else:
+                    id = codigo['id_fornecedor']['ids_vazios'][0]
+                    codigo['id_fornecedor']['ids_vazios'].pop(0)
+
+                with open('banco_dados/ids.json', 'w') as arq:
+                    json.dump(codigo, arq, indent=4)
+                    return id
+        except:
+            return (False, 'Erro interno do sistema')
+
+
+    @staticmethod
+    def cadastrar(fornecedor: Fornecedor, codigo: json) -> tuple:
+        dado = {
+            "id": fornecedor.id,
+            "nome": fornecedor.nome,
+            "telefone": fornecedor.telefone,
+            "email": fornecedor.email,
+            "cnpj": fornecedor.cnpj
+        }
+
+        codigo.insert(fornecedor.id, dado)
+        try:
+            with open('banco_dados/fornecedores.json', 'w') as arq:
+                json.dump(codigo, arq, indent=4)
+                return (True, 'Fornecedor cadastrado com sucesso!')
+        except:
+            return (False, 'Não foi possível cadastrar o fornecedor')
