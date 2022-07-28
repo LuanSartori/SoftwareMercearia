@@ -1,7 +1,8 @@
-from model import Categoria, Produto, Fornecedor, Lote
-from dal import CategoriaDal, EstoqueDal, FornecedorDal
+import re
+from model import Categoria, Funcionario, Produto, Fornecedor, Lote
+from dal import CategoriaDal, EstoqueDal, FornecedorDal, FuncionarioDal
 
-from utils import cnpj_valido, email_valido, telefone_valido
+from utils import cnpj_valido, cpf_valido, email_valido, telefone_valido
 
 
 class IdError(Exception):
@@ -71,6 +72,10 @@ class CategoriaController():
         return CategoriaDal.remover(id_categoria, index, codigo, codigo_estoque)
 
 
+# --------------------------------------------------
+# --------------------------------------------------
+
+
 class EstoqueController:
     @staticmethod
     def cadastrar_produto(id_categoria: int, nome: str, marca: str, preco: float, quantidade: int=None, id_fornecedor: int=None):
@@ -129,14 +134,23 @@ class EstoqueController:
         return EstoqueDal.remover_produto(id_produto, id_categoria, codigo_estoque)
 
 
+# --------------------------------------------------
+# --------------------------------------------------
+
+
 class FornecedorController:
     @staticmethod
-    def cadastrar_fornecedor(nome: str, telefone: str, email: str, cnpj: str):
+    def cadastrar_fornecedor(nome: str, telefone: str, email: str, cnpj: str=None):
         codigo = FornecedorDal.ler_arquivo()
         if not codigo:
             raise ServerError('Não foi possível acessar o banco de dados!')
+        
+        if cnpj != None:
+            for f in codigo:
+                if f['cnpj'] == cnpj:
+                    raise ValueError('Já existe um fornecedor cadastrado com este CNPJ!')
 
-        if (not nome) or 5 > len(nome) > 50:
+        if (not nome) or 5 > len(nome) > 50 or not nome.isnumeric():
             raise ValueError('Nome inválido!')
 
         telefone = telefone_valido(telefone)
@@ -161,7 +175,7 @@ class FornecedorController:
             raise ServerError('Não foi possível acessar o banco de dados!')
         
         if not FornecedorDal.ler_fornecedor(codigo, id_fornecedor):
-            raise IdError('Não existe um fornecedor com este ID', id_fornecedor)
+            raise IdError('Não existe um fornecedor com este ID')
         
         if kwargs.get('nome') != None:
             if (not kwargs.get('nome')) or 5 > len(kwargs.get('nome')) > 50:
@@ -197,7 +211,7 @@ class FornecedorController:
 
     @staticmethod
     def cadastrar_lote(id_fornecedor: int, preco_lote: float, id_categoria: int, id_produto: id, quantidade: int, tempo: list=None):
-        # Na view vai perguntar se o produto do lote já existe no sistema ou se ele quer criar um
+        # Na view vai perguntar se o produto do lote já existe no sistema ou se ele quer criar um !!!
 
         codigo = FornecedorDal.ler_arquivo()
         codigo_estoque = EstoqueDal.ler_arquivo()
@@ -255,3 +269,106 @@ class FornecedorController:
             raise IdError('Não existe um lote com esse ID neste fornecedor!')
         
         return FornecedorDal.remover_lote(id_fornecedor, id_lote, codigo)
+
+
+# --------------------------------------------------
+# --------------------------------------------------
+
+
+class FuncionarioController:
+    @staticmethod
+    def cadastrar_funcionario(nome: str, telefone: str, email: str, cpf: str, cargo: str, senha: str, admin=False, posicao=None):
+        codigo = FuncionarioDal.ler_arquivo()
+        if not codigo:
+            raise ServerError('Não foi possível acessar o banco de dados!')
+        
+        # aqui vamos verificar se a posicao do ADM que está logado não é menor do que a do ADM que ele quer cadastrar, para isso vamos receber um parâmetro a mais !!!
+
+        for f in codigo['funcionarios']:
+            if f['cpf'] == cpf:
+                raise ValueError('Já existe um funcionário cadastrado com este CPF!')
+        for f in codigo['admins']:
+            if f['cpf'] == cpf:
+                raise ValueError('Já existe um ADM cadastrado com este CPF!')
+        
+        if (not nome) or 5 > len(nome) > 50 or nome.isnumeric():
+            raise ValueError('Nome inválido!')
+
+        telefone = telefone_valido(telefone)
+        print(telefone)
+        if not telefone:
+            raise ValueError('Telefone inválido!')
+
+        if not email_valido(email):
+            raise ValueError('Email inválido!')
+
+        if not cpf_valido:
+            raise ValueError('CPF inválido!')
+        
+        if admin:
+            id = FuncionarioDal.gerar_id_admin()
+        else:
+            id = FuncionarioDal.gerar_id_funcionario()
+
+        funcionario = Funcionario(id, nome, cpf, cargo, senha, telefone, email)
+        if admin:
+            return FuncionarioDal.cadastrar_funcionario(funcionario, codigo, admin=True, posicao=posicao)
+        else:
+            return FuncionarioDal.cadastrar_funcionario(funcionario, codigo)
+
+
+    @staticmethod
+    def alterar_funcionario(id_funcionario, admin=False, posicao=None, **kwargs):
+        codigo = FuncionarioDal.ler_arquivo()
+        if not codigo:
+            raise ServerError('Não foi possível acessar o banco de dados!')
+
+        # aqui vamos verificar se a posicao do ADM que está logado não é menor do que a do ADM que ele quer alteracao, para isso vamos receber um parâmetro a mais !!!
+        
+        if admin:
+            if not FuncionarioDal.ler_funcionario(codigo, id_funcionario, admin=True):
+                raise IdError('Não existe um funcionário com este ID!')
+        else:
+            if not FuncionarioDal.ler_funcionario(codigo, id_funcionario):
+                raise IdError('Não existe um funcionário com este ID!')
+        
+        if kwargs.get('nome') != None:
+            if (not kwargs.get('nome')) or 5 > len(kwargs.get('nome')) > 50:
+                raise ValueError('Nome inválido!')
+
+        if kwargs.get('telefone') != None:
+            telefone = telefone_valido(kwargs.get('telefone'))
+            if not telefone:
+                raise ValueError('Telefone inválido!')
+
+        if kwargs.get('email') != None:
+            if not email_valido(kwargs.get('email')):
+                raise ValueError('Email inválido!')
+
+        if kwargs.get('cpf') != None:
+            if not cpf_valido(kwargs.get('cpf')):
+                raise ValueError('CPF inválido!')
+        
+        if admin:
+            return FuncionarioDal.alterar_funcionario(id_funcionario, codigo, admin=True, posicao=posicao, **kwargs)
+        else:
+            return FuncionarioDal.alterar_funcionario(id_funcionario, codigo, **kwargs)
+
+    
+    @staticmethod
+    def remover_funcionario(id_funcionario: int, admin=False):
+        codigo = FuncionarioDal.ler_arquivo()
+        if not codigo:
+            raise ServerError('Não foi possível acessar o banco de dados!')
+        
+        if admin:
+            if not FuncionarioDal.ler_funcionario(codigo, id_funcionario, admin=True):
+                raise IdError('Não existe um ADM com este ID')
+        else:
+            if not FuncionarioDal.ler_funcionario(codigo, id_funcionario):
+                raise IdError('Não existe um funcionário com este ID')
+        
+        if admin:
+            return FuncionarioDal.remover_funcionario(id_funcionario, codigo, admin=True)
+        else:
+            return FuncionarioDal.remover_funcionario(id_funcionario, codigo)

@@ -4,11 +4,10 @@ import re
 
 def telefone_valido(telefone):
     try:
-        padrao = "([0-9]{2,3})?(\([0-9]{2}\))([0-9]{4,5})([0-9]{4})"
+        padrao = "([0-9]{2,3}) ?(\([0-9]{2}\))([0-9]{4,5})([0-9]{4})"
         resposta = re.search(padrao, telefone)
-        numero_formatado = "+{} {}{}-{}".format(
-                    resposta.group(1),resposta.group(2),
-                    resposta.group(3), resposta.group(4))
+        numero_formatado = "+{} {}{}-{}".format(resposta.group(1),resposta.group(2),
+                                                resposta.group(3), resposta.group(4))
         return numero_formatado
     except:
         return False
@@ -17,6 +16,27 @@ def telefone_valido(telefone):
 def email_valido(email):
     valida = re.compile(r'^[\w-]+@(?:[a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}$')
     return valida.match(email)
+
+
+def cpf_valido(cpf: str) -> bool:
+    cpf = cpf.replace('.', '')
+    cpf = cpf.replace('-', '')
+
+    TAMANHO_CPF = 11
+    if len(cpf) != TAMANHO_CPF:
+        return False
+
+    if cpf in (c * TAMANHO_CPF for c in "1234567890"):
+        return False
+
+    cpf_reverso = cpf[::-1]
+    for i in range(2, 0, -1):
+        cpf_enumerado = enumerate(cpf_reverso[i:], start=2)
+        dv_calculado = sum(map(lambda x: int(x[1]) * x[0], cpf_enumerado)) * 10 % 11
+        if cpf_reverso[i - 1:i] != str(dv_calculado % 10):
+            return False
+
+    return True
 
 
 def cnpj_valido(cnpj: str) -> bool:

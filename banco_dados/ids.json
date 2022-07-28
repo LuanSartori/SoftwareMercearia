@@ -13,8 +13,14 @@
     },
     "id_lote": {
         "novo_id": 1,
-        "ids_vazios": [
-            0
-        ]
+        "ids_vazios": []
+    },
+    "id_admin": {
+        "novo_id": 1,
+        "ids_vazios": []
+    },
+    "id_funcionario": {
+        "novo_id": 1,
+        "ids_vazios": []
     }
 }

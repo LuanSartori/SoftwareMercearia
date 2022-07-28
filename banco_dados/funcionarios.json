@@ -1,0 +1,25 @@
+{
+    "admins": [
+        {
+            "id": 0,
+            "cpf": 9999999999,
+            "nome": "Carlos",
+            "telefone": "+55 (19)912345678",
+            "email": "carlosverso@gmail.com",
+            "cargo": "chefe",
+            "senha": "11111112",
+            "posicao": 0
+        }
+    ],
+    "funcionarios": [
+        {
+            "id": 0,
+            "cpf": 9999999999,
+            "nome": "Fernando",
+            "telefone": "+55 (19)912345678",
+            "email": "fernado_touro@gmail.com",
+            "cargo": "gerente",
+            "senha": "00000001"
+        }
+    ]
+}

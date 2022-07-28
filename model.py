@@ -15,7 +15,7 @@ class Produto:
         self.id_fornecedor = id_fornecedor
 
 
-class Cliente:
+class Pessoa:
     def __init__(self, nome: str, cpf: str=None, telefone: str=None, email: str=None):
         self.nome = nome
         self.cpf = cpf
@@ -23,7 +23,7 @@ class Cliente:
         self.email = email
 
 
-class Fornecedor(Cliente):
+class Fornecedor(Pessoa):
     def __init__(self, id: int, nome: str, telefone: str = None, email: str = None, cnpj: str=None):
         super().__init__(nome, telefone=telefone, email=email)
         self.id = id
@@ -37,3 +37,11 @@ class Lote():
         self.id_produto = id_produto
         self.quantidade = quantidade
         self.tempo = tempo
+
+
+class Funcionario(Pessoa):
+    def __init__(self, id: int, nome: str, cpf: str, cargo: str, senha: str, telefone: str = None, email: str = None):
+        super().__init__(nome, cpf, telefone, email)
+        self.id = id
+        self.cargo = cargo
+        self.senha = senha

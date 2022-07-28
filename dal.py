@@ -1,6 +1,6 @@
 import json
 from operator import itemgetter
-from model import Categoria, Produto, Fornecedor, Lote
+from model import Categoria, Funcionario, Produto, Fornecedor, Lote
 
 
 class CategoriaDal:
@@ -491,3 +491,182 @@ class FornecedorDal:
                     return (True, 'Lote removido com sucesso!')
         except:
             return (False, 'Não foi possível remover o lote!')
+
+
+# --------------------------------------------------
+# --------------------------------------------------
+
+
+class FuncionarioDal:
+    @staticmethod
+    def ler_arquivo():
+        try:
+            with open('banco_dados/funcionarios.json', 'r') as arq:
+                return json.load(arq)
+        except:
+            return False
+    
+    
+    @staticmethod
+    def ler_funcionario(codigo: json, id_funcionario: int, admin=False, retorna_obj=True) -> tuple:
+        if admin:
+            for i, f in enumerate(codigo['admins']):
+                if f['id'] == id_funcionario:
+                    
+                    if retorna_obj:
+                        return (i, Funcionario(f['id'],
+                                               f['nome'],
+                                               f['cpf'],
+                                               f['cargo'],
+                                               f['senha'],
+                                               f['telefone'],
+                                               f['email']))
+                    return (i, f)
+        else:
+            for i, f in enumerate(codigo['funcionarios']):
+                if f['id'] == id_funcionario:
+
+                    if retorna_obj:
+                        return (i, Funcionario(f['id'],
+                                               f['nome'],
+                                               f['cpf'],
+                                               f['cargo'],
+                                               f['senha'],
+                                               f['telefone'],
+                                               f['email']))
+                    return (i, f)
+        
+        return False
+
+    
+    @staticmethod
+    def gerar_id_funcionario():
+        try:
+            with open('banco_dados/ids.json', 'r') as arq:
+                codigo = json.load(arq)
+                if len( codigo['id_funcionario']['ids_vazios'] ) == 0:
+                    id = codigo['id_funcionario']['novo_id']
+                    codigo['id_funcionario']['novo_id'] += 1
+                else:
+                    id = codigo['id_funcionario']['ids_vazios'][0]
+                    codigo['id_funcionario']['ids_vazios'].pop(0)
+
+                with open('banco_dados/ids.json', 'w') as arq:
+                    json.dump(codigo, arq, indent=4)
+                    return id
+        except:
+            return (False, 'Erro interno do sistema')
+    
+
+    @staticmethod
+    def gerar_id_admin():
+        try:
+            with open('banco_dados/ids.json', 'r') as arq:
+                codigo = json.load(arq)
+                if len( codigo['id_admin']['ids_vazios'] ) == 0:
+                    id = codigo['id_admin']['novo_id']
+                    codigo['id_admin']['novo_id'] += 1
+                else:
+                    id = codigo['id_admin']['ids_vazios'][0]
+                    codigo['id_admin']['ids_vazios'].pop(0)
+
+                with open('banco_dados/ids.json', 'w') as arq:
+                    json.dump(codigo, arq, indent=4)
+                    return id
+        except:
+            return (False, 'Erro interno do sistema')
+    
+
+    @staticmethod
+    def cadastrar_funcionario(funcionario: Funcionario, codigo: json, admin=False, posicao=None):
+        dado = {
+            'id':       funcionario.id,
+            'cpf':      funcionario.cpf,
+            'nome':     funcionario.nome,
+            'telefone': funcionario.telefone,
+            'email':    funcionario.email,
+            'cargo':    funcionario.cargo,
+            'senha':    funcionario.senha
+        }
+
+        if admin:
+            dado['posicao'] = posicao
+            codigo['admins'].append(dado)
+            codigo['admins'] = sorted(codigo['admins'], key=itemgetter('id'))
+        else:
+            codigo['funcionarios'].append(dado)
+            codigo['funcionarios'] = sorted(codigo['funcionarios'], key=itemgetter('id'))
+        
+        try:
+            with open('banco_dados/funcionarios.json', 'w') as arq:
+                json.dump(codigo, arq, indent=4)
+                if admin:
+                    return (True, 'ADM cadastrado com sucesso!')
+                return (True, 'Funcionário cadastrado com sucesso!')
+        except:
+            return (False, 'Não foi possível cadastrar o funcionário!')
+    
+
+    @staticmethod
+    def alterar_funcionario(id_funcionario: int, codigo: json, admin=False, posicao=None, **kwargs):
+        index, funcionario = FuncionarioDal.ler_funcionario(codigo, id_funcionario, admin=admin, retorna_obj=False)
+
+        alteracao = {
+            "cpf":      kwargs.get('cpf'),
+            "nome":     kwargs.get('nome'),
+            "telefone": kwargs.get('telefone'),
+            "email":    kwargs.get('email'),
+            "cargo":    kwargs.get('cargo'),
+            "senha":    kwargs.get('senha')
+        }
+        if admin:
+            alteracao['posicao'] = posicao
+        for chave, valor in alteracao.items():
+            if valor != None:
+                funcionario[chave] = valor
+        
+        if admin:
+            codigo['admins'][index] = funcionario
+        else:
+            codigo['funcionarios'][index] = funcionario
+
+        try:
+            with open('banco_dados/funcionarios.json', 'w') as arq:
+                json.dump(codigo, arq, indent=4)
+                if admin:
+                    return (True, 'ADM alterado com sucesso!')
+                return (True, 'Funcionário alterado com sucesso!')
+        except:
+            return (False, 'Não foi possível alterar o funcionário!')
+    
+
+    @staticmethod
+    def remover_funcionario(id_funcionario: int, codigo: json, admin=False):
+        index, funcionario = FuncionarioDal.ler_funcionario(codigo, id_funcionario, admin=admin, retorna_obj=False)
+
+        if admin:
+            codigo['admins'].pop(index)
+        else:
+            codigo['funcionarios'].pop(index)
+
+        try:
+            with open('banco_dados/funcionarios.json', 'w') as arq:
+                json.dump(codigo, arq, indent=4)
+            
+            with open('banco_dados/ids.json', 'r') as arq:
+                codigo = json.load(arq)
+
+                if admin:
+                    codigo['id_admin']['ids_vazios'].append(id_funcionario)
+                    codigo['id_admin']['ids_vazios'].sort()
+                else:
+                    codigo['id_funcionario']['ids_vazios'].append(id_funcionario)
+                    codigo['id_funcionario']['ids_vazios'].sort()
+
+                with open('banco_dados/ids.json', 'w') as arq:
+                    json.dump(codigo, arq, indent=4)
+                    if admin:
+                        return (True, 'ADM removido com sucesso!')
+                    return (True, 'Funcionário removido com sucesso!')
+        except:
+            return (False, 'Não foi possível remover o funcionário1')
