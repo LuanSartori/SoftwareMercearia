@@ -1,5 +1,6 @@
 import json
-from model import Categoria, Produto, Fornecedor
+from operator import itemgetter
+from model import Categoria, Produto, Fornecedor, Lote
 
 
 class CategoriaDal:
@@ -43,7 +44,8 @@ class CategoriaDal:
     def salvar(categoria: Categoria, codigo: json, codigo_estoque: json) -> tuple:
         try:
             nova_categoria = {'id': categoria.id, 'categoria': categoria.categoria}
-            codigo.insert(categoria.id, nova_categoria)
+            codigo.append(nova_categoria)
+            codigo = sorted(codigo, key=itemgetter('id'))
 
             with open('banco_dados/categorias.json', 'w') as arq:
                 json.dump(codigo, arq, indent=4)
@@ -89,6 +91,7 @@ class CategoriaDal:
 # --------------------------------------------------
 # --------------------------------------------------
 
+
 class EstoqueDal:
     @staticmethod
     def ler_arquivo():
@@ -109,7 +112,8 @@ class EstoqueDal:
     @staticmethod
     def salvar_categoria(categoria: Categoria, codigo: json):
         dado = {"id": categoria.id, "categoria": categoria.categoria, "produtos": []}
-        codigo.insert(categoria.id, dado)
+        codigo.append(dado)
+        codigo = sorted(codigo, key=itemgetter('id'))
 
         try:
             with open('banco_dados/estoque.json', 'w') as arq:
@@ -201,6 +205,7 @@ class EstoqueDal:
         }
 
         codigo[index]['produtos'].append(dado)
+        codigo[index]['produtos'] = sorted(codigo[index]['produtos'], key=itemgetter('id'))
         try:
             with open('banco_dados/estoque.json', 'w') as arq:
                 json.dump(codigo, arq, indent=4)
@@ -230,7 +235,8 @@ class EstoqueDal:
         if alteracao['id_categoria'] != None:
             codigo[index]['produtos'].pop(i)
             index = alteracao['id_categoria']
-            codigo[index]['produtos'].insert( produto['id'], produto )
+            codigo[index]['produtos'].append(produto)
+            codigo[index]['produtos'] = sorted(codigo[index]['produtos'], key=itemgetter('id'))
         else:
             codigo[index]['produtos'][i] = produto
 
@@ -263,6 +269,10 @@ class EstoqueDal:
             return (False, 'Não foi possível remover o produto!')
 
 
+# --------------------------------------------------
+# --------------------------------------------------
+
+
 class FornecedorDal:
     @staticmethod
     def ler_arquivo():
@@ -274,14 +284,23 @@ class FornecedorDal:
     
 
     @staticmethod
-    def pesquisar_arquivo(codigo: json, id_fornecedor: int):
-        for i, c in enumerate(codigo):
-            if c['id'] == id_fornecedor:
-                return i
+    def ler_fornecedor(codigo, id, retorna_obj=True):
+        for i, f in enumerate(codigo):
+            if f['id'] == id:
+                
+                if retorna_obj:
+                    return (i, Fornecedor(f['id'],
+                                          f['nome'],
+                                          f['telefone'],
+                                          f['email'],
+                                          f['cnpj']))
+                else:
+                    return (i, f)
+        return False
     
 
     @staticmethod
-    def gerar_id():
+    def gerar_id_fornecedor():
         try:
             with open('banco_dados/ids.json', 'r') as arq:
                 codigo = json.load(arq)
@@ -300,7 +319,7 @@ class FornecedorDal:
 
 
     @staticmethod
-    def cadastrar(fornecedor: Fornecedor, codigo: json) -> tuple:
+    def cadastrar_fornecedor(fornecedor: Fornecedor, codigo: json) -> tuple:
         dado = {
             "id": fornecedor.id,
             "nome": fornecedor.nome,
@@ -309,10 +328,166 @@ class FornecedorDal:
             "cnpj": fornecedor.cnpj
         }
 
-        codigo.insert(fornecedor.id, dado)
+        codigo.append(dado)
+        codigo = sorted(codigo, key=itemgetter('id'))
         try:
             with open('banco_dados/fornecedores.json', 'w') as arq:
                 json.dump(codigo, arq, indent=4)
                 return (True, 'Fornecedor cadastrado com sucesso!')
         except:
             return (False, 'Não foi possível cadastrar o fornecedor')
+    
+
+    @staticmethod
+    def alterar_fornecedor(id: int, codigo: json, **kwargs):
+        index, fornecedor = FornecedorDal.ler_fornecedor(codigo, id)
+
+        alteracao = {
+            "nome":     kwargs.get('nome'),
+            "telefone": kwargs.get('telefone'),
+            "email":    kwargs.get('email'),
+            "cnpj":     kwargs.get('cnpj')
+        }
+
+        for chave, valor in alteracao.items():
+            if valor != None:
+                fornecedor[chave] = valor
+        
+        codigo[index] = fornecedor
+        try:
+            with open('banco_dados/fornecedores.json', 'w') as arq:
+                json.dump(codigo, arq, indent=4)
+                return (True, 'Fornecedor alterado com sucesso!')
+        except:
+            return (False, 'Não foi possível alterar o fornecedor!')
+
+
+    @staticmethod
+    def remover_fornecedor(id_fornecedor: int, codigo: json):
+        index, fornecedor = FornecedorDal.ler_fornecedor(codigo, id_fornecedor)
+        codigo.pop(index)
+
+        try:
+            with open('banco_dados/fornecedores.json', 'w') as arq:
+                json.dump(codigo, arq, indent=4)
+            
+            with open('banco_dados/ids.json', 'r') as arq:
+                codigo = json.load(arq)
+                codigo['id_fornecedor']['ids_vazios'].append(id)
+                codigo['id_fornecedor']['ids_vazios'].sort()
+                with open('banco_dados/ids.json', 'w') as arq:
+                    json.dump(codigo, arq, indent=4)
+                    return (True, 'Fornecedor removido com sucesso!')
+        except:
+            return (False, 'Não foi possível remover este fornecedor!')
+
+
+    @staticmethod
+    def ler_lote(id_fornecedor: int, codigo: json, id_lote=None, retorna_obj=True):
+        index, fornecedor = FornecedorDal.ler_fornecedor(codigo, id_fornecedor, False)
+
+        if not id_lote != None:
+            return codigo[index]['lotes']
+        
+        for i, lote in enumerate(codigo[index]['lotes']):
+            if lote['id_lote'] == id_lote:
+
+                if retorna_obj:
+                    return (i, Lote(lote['id_lote'],
+                                    lote['preco_lote'],
+                                    lote['id_produto'],
+                                    lote['quantidade'],
+                                    lote['tempo'])
+                                    )
+                else:
+                    return (i, lote)
+        return False
+
+    
+    @staticmethod
+    def gerar_id_lote():
+        try:
+            with open('banco_dados/ids.json', 'r') as arq:
+                codigo = json.load(arq)
+                if len( codigo['id_lote']['ids_vazios'] ) == 0:
+                    id = codigo['id_lote']['novo_id']
+                    codigo['id_lote']['novo_id'] += 1
+                else:
+                    id = codigo['id_lote']['ids_vazios'][0]
+                    codigo['id_lote']['ids_vazios'].pop(0)
+
+                with open('banco_dados/ids.json', 'w') as arq:
+                    json.dump(codigo, arq, indent=4)
+                    return id
+        except:
+            return (False, 'Erro interno do sistema')
+
+
+    @staticmethod
+    def cadastrar_lote(id_fornecedor: int, lote: Lote, codigo: json):
+        index, fornecedor = FornecedorDal.ler_fornecedor(codigo, id_fornecedor)
+
+        dado = {
+            'id_lote':    lote.id_lote,
+            'preco_lote': lote.preco_lote,
+            'id_produto': lote.id_produto,
+            'quantidade': lote.quantidade,
+            'tempo':      lote.tempo
+        }
+        codigo[index]['lotes'].append(dado)
+        codigo[index]['lotes'] = sorted(codigo[index]['lotes'], key=itemgetter('id_lote'))
+        try:
+            with open('banco_dados/fornecedores.json', 'w') as arq:
+                json.dump(codigo, arq, indent=4)
+                return (True, 'Lote cadastrado com sucesso!')
+        except:
+            return (False, 'Não foi possível cadastrar o lote!')
+    
+
+    @staticmethod
+    def alterar_lote(id_fornecedor: int, id_lote: int, codigo: json, **kwargs):
+        index_fornecedor, fornecedor = FornecedorDal.ler_fornecedor(codigo, id_fornecedor)
+        index_lote, lote = FornecedorDal.ler_lote(id_fornecedor, codigo, id_lote=id_lote, retorna_obj=False)
+
+        alteracao = {
+            'preco_lote':   kwargs.get('preco_lote'),
+            'id_produto':   kwargs.get('id_produto'),
+            'quantidade':   kwargs.get('quantidade'),
+            'tempo':        kwargs.get('tempo')
+        }
+
+        for chave, valor in alteracao.items():
+            if valor != None:
+                lote[chave] = valor
+        
+        codigo[index_fornecedor]['lotes'][index_lote] = lote
+        try:
+            with open('banco_dados/fornecedores.json', 'w') as arq:
+                json.dump(codigo, arq, indent=4)
+                return (True, 'Lote alterado com sucesso!')
+        except:
+            return (False, 'Não foi possível alterar o lote!')
+
+
+    @staticmethod
+    def remover_lote(id_fornecedor: int, id_lote: int, codigo: json):
+        print('Tá executando!')
+        index_fornecedor, fornecedor = FornecedorDal.ler_fornecedor(codigo, id_fornecedor, False)
+        index_lote, lote = FornecedorDal.ler_lote(id_fornecedor, codigo, id_lote=id_lote, retorna_obj=False)
+
+        codigo[index_fornecedor]['lotes'].pop(index_lote)
+
+        try:
+            with open('banco_dados/fornecedores.json', 'w') as arq:
+                json.dump(codigo, arq, indent=4)
+            
+            with open('banco_dados/ids.json', 'r') as arq:
+                codigo = json.load(arq)
+                codigo['id_lote']['ids_vazios'].append(id_lote)
+                codigo['id_lote']['ids_vazios'].sort()
+
+                with open('banco_dados/ids.json', 'w') as arq:
+                    json.dump(codigo, arq, indent=4)
+                    return (True, 'Lote removido com sucesso!')
+        except:
+            return (False, 'Não foi possível remover o lote!')

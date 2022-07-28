@@ -1,16 +1,16 @@
-from model import Categoria, Produto, Fornecedor
+from model import Categoria, Produto, Fornecedor, Lote
 from dal import CategoriaDal, EstoqueDal, FornecedorDal
 
 from utils import cnpj_valido, email_valido, telefone_valido
 
 
 class IdError(Exception):
-    def __init__(self, msg: str, valor: int):
+    def __init__(self, *objects):
         pass
 
 
 class ServerError(Exception):
-    def __init__(self, msg: str):
+    def __init__(self, *objects):
         pass
 
 
@@ -131,7 +131,7 @@ class EstoqueController:
 
 class FornecedorController:
     @staticmethod
-    def cadastrar(nome: str, telefone: str, email: str, cnpj: str):
+    def cadastrar_fornecedor(nome: str, telefone: str, email: str, cnpj: str):
         codigo = FornecedorDal.ler_arquivo()
         if not codigo:
             raise ServerError('Não foi possível acessar o banco de dados!')
@@ -149,6 +149,109 @@ class FornecedorController:
         if not cnpj_valido(cnpj):
             raise ValueError('CNPJ inválido!')
         
-        id = FornecedorDal.gerar_id()
+        id = FornecedorDal.gerar_id_fornecedor()
         fornecedor = Fornecedor(id, nome, telefone, email, cnpj)
-        return FornecedorDal.cadastrar(fornecedor, codigo)
+        return FornecedorDal.cadastrar_fornecedor(fornecedor, codigo)
+    
+
+    @staticmethod
+    def alterar_fornecedor(id_fornecedor, **kwargs):
+        codigo = FornecedorDal.ler_arquivo()
+        if not codigo:
+            raise ServerError('Não foi possível acessar o banco de dados!')
+        
+        if not FornecedorDal.ler_fornecedor(codigo, id_fornecedor):
+            raise IdError('Não existe um fornecedor com este ID', id_fornecedor)
+        
+        if kwargs.get('nome') != None:
+            if (not kwargs.get('nome')) or 5 > len(kwargs.get('nome')) > 50:
+                raise ValueError('Nome inválido!')
+
+        if kwargs.get('telefone') != None:
+            telefone = telefone_valido(kwargs.get('telefone'))
+            if not telefone:
+                raise ValueError('Telefone inválido!')
+
+        if kwargs.get('email') != None:
+            if not email_valido(kwargs.get('email')):
+                raise ValueError('Email inválido!')
+
+        if kwargs.get('cnpj') != None:
+            if not cnpj_valido(kwargs.get('cnpj')):
+                raise ValueError('CNPJ inválido!')
+        
+        return FornecedorDal.alterar_fornecedor(id, codigo, **kwargs)
+    
+
+    @staticmethod
+    def remover_fornecedor(id_fornecedor: int):
+        codigo = FornecedorDal.ler_arquivo()
+        if not codigo:
+            raise ServerError('Não foi possível acessar o banco de dados!')
+        
+        if not FornecedorDal.ler_fornecedor(codigo, id_fornecedor):
+            raise IdError('Não existe um fornecedor com este ID', id_fornecedor)
+
+        return FornecedorDal.remover_fornecedor(id_fornecedor, codigo)
+    
+
+    @staticmethod
+    def cadastrar_lote(id_fornecedor: int, preco_lote: float, id_categoria: int, id_produto: id, quantidade: int, tempo: list=None):
+        # Na view vai perguntar se o produto do lote já existe no sistema ou se ele quer criar um
+
+        codigo = FornecedorDal.ler_arquivo()
+        codigo_estoque = EstoqueDal.ler_arquivo()
+        if not codigo or not codigo_estoque:
+            raise ServerError('Não foi possível acessar o banco de dados!')
+        
+        if not FornecedorDal.ler_fornecedor(codigo, id_fornecedor):
+            raise IdError('Não existe um fornecedor com este ID', id_fornecedor)
+        
+        if not EstoqueDal.ler_produto(id_categoria, id_produto, codigo_estoque):
+            raise IdError('Não existe um produto com este ID', id_produto)
+
+        if tempo != None:
+            valida = ['dia', 'semana', 'mês']
+            if not tempo[1] in valida:
+                raise ValueError('Tempo inválido!', tempo[1])
+        
+        
+        id = FornecedorDal.gerar_id_lote()
+        lote = Lote(id, preco_lote, id_produto, quantidade, tempo)
+        return FornecedorDal.cadastrar_lote(id_fornecedor, lote, codigo)
+    
+    
+    @staticmethod
+    def alterar_lote(id_fornecedor: int, id_lote: int, **kwargs):
+        codigo = FornecedorDal.ler_arquivo()
+        if not codigo:
+            raise ServerError('Não foi possível acessar o banco de dados!')
+        
+        if not FornecedorDal.ler_fornecedor(codigo, id_fornecedor):
+            raise IdError('Não existe um fornecedor com este ID', id_fornecedor)
+        if not FornecedorDal.ler_lote(id_fornecedor, codigo, id_lote=id_lote, retorna_obj=False):
+            raise IdError('Não existe um lote com esse ID neste fornecedor!')
+        
+        if kwargs.get('id_categoria') != None:
+            codigo_estoque = EstoqueDal.ler_arquivo()
+            if not codigo_estoque:
+                raise ServerError('Não foi possível acessar o banco de dados!')
+            
+            if not EstoqueDal.ler_produto(kwargs.get('id_categoria'), kwargs.get('id_produto'), codigo_estoque):
+                raise IdError('Não existe um produto com este ID', kwargs.get('id_produto'))
+        
+        return FornecedorDal.alterar_lote(id_fornecedor, id_lote, codigo, **kwargs)
+
+
+    @staticmethod
+    def remover_lote(id_fornecedor: int, id_lote: int):
+        codigo = FornecedorDal.ler_arquivo()
+        if not codigo:
+            raise ServerError('Não foi possível acessar o banco de dados!')
+        
+        if not FornecedorDal.ler_fornecedor(codigo, id_fornecedor):
+            raise IdError('Não existe um fornecedor com este ID', id_fornecedor)
+        if not FornecedorDal.ler_lote(id_fornecedor, codigo, id_lote=id_lote, retorna_obj=False):
+            raise IdError('Não existe um lote com esse ID neste fornecedor!')
+        
+        return FornecedorDal.remover_lote(id_fornecedor, id_lote, codigo)

@@ -28,3 +28,12 @@ class Fornecedor(Cliente):
         super().__init__(nome, telefone=telefone, email=email)
         self.id = id
         self.cnpj = cnpj
+
+
+class Lote():
+    def __init__(self, id_lote: int, preco_lote: float, id_produto: int, quantidade: int, tempo: list=None):
+        self.id_lote = id_lote
+        self.preco_lote = preco_lote
+        self.id_produto = id_produto
+        self.quantidade = quantidade
+        self.tempo = tempo

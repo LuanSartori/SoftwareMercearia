@@ -1,13 +1,29 @@
 [
     {
         "id": 0,
-        "Nome": "Nenhum"
+        "nome": "Nenhum",
+        "telefone": "Nenhum",
+        "email": "Nenhum",
+        "cnpj": "Nenhum",
+        "lotes": "nenhum"
     },
     {
         "id": 1,
         "nome": "Albert Einsten",
         "telefone": "+55 (19) 91234-5678",
         "email": "einsten_genio@gmail.com",
-        "cnpj": "9999999999"
+        "cnpj": "9999999999",
+        "lotes": [
+            {
+                "id_lote": 0,
+                "preco_lote": 600.0,
+                "id_produto": 0,
+                "quantidade": 35,
+                "tempo": [
+                    7,
+                    "dia"
+                ]
+            }
+        ]
     }
 ]
