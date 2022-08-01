@@ -1,0 +1,28 @@
+[
+    {
+        "id": 0,
+        "nome": "Lucas",
+        "cpf": 999999999,
+        "telefone": "+55 (19) 91234-5678",
+        "email": "lucas_o_sereio@gmail.com",
+        "senha": "LucasPeixeN3to",
+        "carrinho": [
+            {
+                "id_produto": 0,
+                "quantidade": 5,
+                "preco_unitario": 3.5,
+                "preco_total": 17.5,
+                "id_funcionario": 0
+            }
+        ]
+    },
+    {
+        "id": 1,
+        "nome": "Geraldo Picareta",
+        "cpf": "412.221.560-91",
+        "telefone": null,
+        "email": null,
+        "senha": "Picareta1234",
+        "carrinho": []
+    }
+]

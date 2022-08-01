@@ -5,7 +5,7 @@
         "telefone": "Nenhum",
         "email": "Nenhum",
         "cnpj": "Nenhum",
-        "lotes": "nenhum"
+        "lotes": []
     },
     {
         "id": 1,

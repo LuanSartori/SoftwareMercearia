@@ -57,3 +57,16 @@ def cnpj_valido(cnpj: str) -> bool:
             return False
 
     return True
+
+
+def senha_valida(senha: str):
+    if len(senha) < 8 or len(senha) > 20:
+        return (False, 'A senha deve ter entre 8 e 20 caracteres!')
+    elif not re.search('[a-z]', senha) or not re.search('[A-Z]', senha):
+        return (False, 'A senha deve conter pelo pelo menos uma letrar maiúscula e minúscula!')
+    elif not re.search('[0-9]', senha):
+        return (False, 'A senha deve ter pelo menos um número!')
+    elif re.search('\s', senha):
+        return (False, 'A senha não deve ter espaços vazios!')
+    else:
+        return True

@@ -45,3 +45,11 @@ class Funcionario(Pessoa):
         self.id = id
         self.cargo = cargo
         self.senha = senha
+
+
+class Cliente(Pessoa):
+    def __init__(self, nome: str, cpf: str, id: int, senha: str, telefone: str = None, email: str = None):
+        super().__init__(nome, cpf, telefone, email)
+        self.id = id
+        self.senha = senha
+        self.carrinho = []

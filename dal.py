@@ -1,6 +1,7 @@
+from concurrent.futures.process import _ExceptionWithTraceback
 import json
 from operator import itemgetter
-from model import Categoria, Funcionario, Produto, Fornecedor, Lote
+from model import Categoria, Funcionario, Produto, Fornecedor, Lote, Cliente
 
 
 class CategoriaDal:
@@ -161,12 +162,12 @@ class EstoqueDal:
             if p['id'] == id_produto:
                 if retorna_obj:
                     return (i, Produto(p['id'],
-                                   p['id_categoria'],
-                                   p['nome'],
-                                   p['marca'],
-                                   p['preco'],
-                                   p['quantidade'],
-                                   p['id_fornecedor']))
+                                       p['id_categoria'],
+                                       p['nome'],
+                                       p['marca'],
+                                       p['preco'],
+                                       p['quantidade'],
+                                       p['id_fornecedor']))
                 else:
                     return (i, p)
         return False
@@ -471,7 +472,6 @@ class FornecedorDal:
 
     @staticmethod
     def remover_lote(id_fornecedor: int, id_lote: int, codigo: json):
-        print('Tá executando!')
         index_fornecedor, fornecedor = FornecedorDal.ler_fornecedor(codigo, id_fornecedor, False)
         index_lote, lote = FornecedorDal.ler_lote(id_fornecedor, codigo, id_lote=id_lote, retorna_obj=False)
 
@@ -669,4 +669,117 @@ class FuncionarioDal:
                         return (True, 'ADM removido com sucesso!')
                     return (True, 'Funcionário removido com sucesso!')
         except:
-            return (False, 'Não foi possível remover o funcionário1')
+            return (False, 'Não foi possível remover o funcionário!')
+
+
+class ClienteDal:
+    @staticmethod
+    def ler_arquivo():
+        try:
+            with open('banco_dados/clientes.json', 'r') as arq:
+                return json.load(arq)
+        except:
+            return False
+    
+
+    @staticmethod
+    def ler_cliente(codigo: json, id: int, retorna_obj=True):
+        for i, cliente in enumerate(codigo):
+            if cliente['id'] == id:
+
+                if retorna_obj:
+                    return (i, Cliente(cliente['nome'],
+                                       cliente['cpf'],
+                                       cliente['id'],
+                                       cliente['senha'],
+                                       cliente['telefone'],
+                                       cliente['email']))
+                return(i, cliente)
+        return False
+    
+
+    @staticmethod
+    def gerar_id():
+        try:
+            with open('banco_dados/ids.json', 'r') as arq:
+                codigo = json.load(arq)
+                if len( codigo['id_cliente']['ids_vazios'] ) == 0:
+                    id = codigo['id_cliente']['novo_id']
+                    codigo['id_cliente']['novo_id'] += 1
+                else:
+                    id = codigo['id_cliente']['ids_vazios'][0]
+                    codigo['id_cliente']['ids_vazios'].pop(0)
+
+                with open('banco_dados/ids.json', 'w') as arq:
+                    json.dump(codigo, arq, indent=4)
+                    return id
+        except:
+            return (False, 'Erro interno do sistema')
+    
+
+    @staticmethod
+    def cadastrar_cliente(cliente: Cliente, codigo: json):
+        dado = {
+            'id': cliente.id,
+            'nome': cliente.nome,
+            'cpf': cliente.cpf,
+            'telefone': cliente.telefone,
+            'email': cliente.email,
+            'senha': cliente.senha,
+            'carrinho': cliente.carrinho
+        }
+
+        codigo.append(dado)
+        codigo = sorted(codigo, key=itemgetter('id'))
+
+        try:
+            with open('banco_dados/clientes.json', 'w') as arq:
+                json.dump(codigo, arq, indent=4)
+                return (True, 'Cliente cadastrado com sucesso!')
+        except:
+            return (False, 'Não foi possível cadastrar o cliente!')
+    
+
+    @staticmethod
+    def alterar_cliente(id_cliente: int, codigo: json, **kwargs):
+        index, cliente = ClienteDal.ler_cliente(codigo, id_cliente, False)
+
+        alteracao = {
+            'nome': kwargs.get('nome'),
+            'cpf': kwargs.get('cpf'),
+            'telefone': kwargs.get('telefone'),
+            'email': kwargs.get('email'),
+            'senha': kwargs.get('senha')
+        }
+        for chave, valor in alteracao.items():
+            if valor != None:
+                cliente[chave] = valor
+        
+        codigo[index] = cliente
+        try:
+            with open('banco_dados/clientes.json', 'w') as arq:
+                json.dump(codigo, arq, indent=4)
+                return (True, 'Cliente alterado com sucesso!')
+        except:
+            return (False, 'Não foi possível alterar o cliente!')
+    
+
+    @staticmethod
+    def remover_cliente(id_cliente: int, codigo: json):
+        index, cliente = ClienteDal.ler_cliente(codigo, id_cliente)
+        codigo.pop(index)
+
+        try:
+            with open('banco_dados/clientes.json', 'w') as arq:
+                json.dump(codigo, arq, indent=4)
+            
+            with open('banco_dados/ids.json', 'r') as arq:
+                codigo = json.load(arq)
+                codigo['id_cliente']['ids_vazios'].append(id_cliente)
+                codigo['id_cliente']['ids_vazios'].sort()
+
+                with open('banco_dados/ids.json', 'w') as arq:
+                    json.dump(codigo, arq, indent=4)
+                    return (True, 'Cliente removido com sucesso!')
+        except:
+            return (False, 'Não foi possível remover o cliente!')

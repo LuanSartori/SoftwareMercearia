@@ -1,8 +1,8 @@
 import re
-from model import Categoria, Funcionario, Produto, Fornecedor, Lote
-from dal import CategoriaDal, EstoqueDal, FornecedorDal, FuncionarioDal
+from model import Categoria, Funcionario, Produto, Fornecedor, Lote, Cliente
+from dal import CategoriaDal, ClienteDal, EstoqueDal, FornecedorDal, FuncionarioDal, ClienteDal
 
-from utils import cnpj_valido, cpf_valido, email_valido, telefone_valido
+from utils import cnpj_valido, cpf_valido, email_valido, telefone_valido, senha_valida
 
 
 class IdError(Exception):
@@ -120,16 +120,23 @@ class EstoqueController:
 
 
     @staticmethod
-    def remover_produto(id_produto: int, id_categoria: int):
+    def remover_produto(id_categoria: int, id_produto: int):
         codigo = CategoriaDal.ler_arquivo()
         codigo_estoque = EstoqueDal.ler_arquivo()
-        if not codigo or not codigo_estoque:
+        codigo_fornecedores = FornecedorDal.ler_arquivo()
+        if not codigo or not codigo_estoque or not codigo_fornecedores:
             raise ServerError('Não foi possível acessar o banco de dados!')
         
         if not EstoqueDal.ler_produto(id_categoria, id_produto, codigo_estoque, True):
             raise IdError('Não existe uma produto com esse ID', id_produto)
         if not CategoriaDal.pesquisar_arquivo('id', str(id_categoria), codigo):
             raise IdError('Não existe uma categoria com esse ID', id_categoria)
+
+        # validando se o produto está vinculado a um lote
+        for i_f, fornecedor in enumerate(codigo_fornecedores):
+            for i_l, lote in enumerate(fornecedor['lotes']):
+                if lote['id_produto'] == id_produto:
+                    raise Exception( {'id_fornecedor': fornecedor['id'], 'id_lote': lote['id_lote']} )
         
         return EstoqueDal.remover_produto(id_produto, id_categoria, codigo_estoque)
 
@@ -145,6 +152,7 @@ class FornecedorController:
         if not codigo:
             raise ServerError('Não foi possível acessar o banco de dados!')
         
+        # !!! no caso de CNPJ duplicado enviar um alerta para o chefe
         if cnpj != None:
             for f in codigo:
                 if f['cnpj'] == cnpj:
@@ -282,25 +290,29 @@ class FuncionarioController:
         if not codigo:
             raise ServerError('Não foi possível acessar o banco de dados!')
         
-        # aqui vamos verificar se a posicao do ADM que está logado não é menor do que a do ADM que ele quer cadastrar, para isso vamos receber um parâmetro a mais !!!
+        valida_senha = senha_valida(senha)
+        if valida_senha != True:
+            raise ValueError(valida_senha)
 
+        # aqui vamos verificar se a posicao do ADM que está logado não é menor do que a do ADM que ele quer cadastrar, para isso vamos receber um parâmetro a mais !!!
+        
+        if (not nome) or 5 > len(nome) > 50 or nome.isnumeric():
+            raise ValueError('Nome inválido!')
+
+        telefone = telefone_valido(telefone)
+        if not telefone:
+            raise ValueError('Telefone inválido!')
+
+        if not email_valido(email):
+            raise ValueError('Email inválido!')
+        
+        # !!! no caso de CPF duplicado enviar um alerta para o chefe
         for f in codigo['funcionarios']:
             if f['cpf'] == cpf:
                 raise ValueError('Já existe um funcionário cadastrado com este CPF!')
         for f in codigo['admins']:
             if f['cpf'] == cpf:
                 raise ValueError('Já existe um ADM cadastrado com este CPF!')
-        
-        if (not nome) or 5 > len(nome) > 50 or nome.isnumeric():
-            raise ValueError('Nome inválido!')
-
-        telefone = telefone_valido(telefone)
-        print(telefone)
-        if not telefone:
-            raise ValueError('Telefone inválido!')
-
-        if not email_valido(email):
-            raise ValueError('Email inválido!')
 
         if not cpf_valido:
             raise ValueError('CPF inválido!')
@@ -332,22 +344,27 @@ class FuncionarioController:
             if not FuncionarioDal.ler_funcionario(codigo, id_funcionario):
                 raise IdError('Não existe um funcionário com este ID!')
         
+        if kwargs.get('senha') != None:
+            valida_senha = senha_valida(kwargs.get('senha'))
+            if valida_senha != True:
+                raise ValueError(valida_senha)
+        
         if kwargs.get('nome') != None:
             if (not kwargs.get('nome')) or 5 > len(kwargs.get('nome')) > 50:
-                raise ValueError('Nome inválido!')
+                raise ValueError(False, 'Nome inválido!')
 
         if kwargs.get('telefone') != None:
             telefone = telefone_valido(kwargs.get('telefone'))
             if not telefone:
-                raise ValueError('Telefone inválido!')
+                raise ValueError(False, 'Telefone inválido!')
 
         if kwargs.get('email') != None:
             if not email_valido(kwargs.get('email')):
-                raise ValueError('Email inválido!')
+                raise ValueError(False, 'Email inválido!')
 
         if kwargs.get('cpf') != None:
             if not cpf_valido(kwargs.get('cpf')):
-                raise ValueError('CPF inválido!')
+                raise ValueError(False, 'CPF inválido!')
         
         if admin:
             return FuncionarioDal.alterar_funcionario(id_funcionario, codigo, admin=True, posicao=posicao, **kwargs)
@@ -372,3 +389,85 @@ class FuncionarioController:
             return FuncionarioDal.remover_funcionario(id_funcionario, codigo, admin=True)
         else:
             return FuncionarioDal.remover_funcionario(id_funcionario, codigo)
+
+
+class ClienteController:
+    @staticmethod
+    def cadastrar_cliente(nome: str, cpf: str, senha: str, telefone: str=None, email: str=None):
+        codigo = ClienteDal.ler_arquivo()
+        if not codigo:
+            raise ServerError('Não foi possível acessar o banco de dados!')
+        
+        valida_senha = senha_valida(senha)
+        if valida_senha != True:
+            raise ValueError(valida_senha)
+        
+        if (not nome) or 5 > len(nome) > 50 or nome.isnumeric():
+            raise ValueError('Nome inválido!')
+
+        if telefone != None:
+            telefone = telefone_valido(telefone)
+            if not telefone:
+                raise ValueError('Telefone inválido!')
+
+        if email != None:
+            if not email_valido(email):
+                raise ValueError('Email inválido!')
+
+        # !!! no caso de CPF duplicado enviar um alerta para o chefe
+        for c in codigo:
+            if c['cpf'] == cpf:
+                raise ValueError('Já existe um cliente cadastrado com este CPF!')
+
+        if not cpf_valido:
+            raise ValueError('CPF inválido!')
+        
+        id = ClienteDal.gerar_id()
+        cliente = Cliente(nome, cpf, id, senha, telefone, email)
+        return ClienteDal.cadastrar_cliente(cliente, codigo)
+
+
+    @staticmethod
+    def alterar_cliente(id_cliente: int, **kwargs):
+        codigo = ClienteDal.ler_arquivo()
+        if not codigo:
+            raise ServerError('Não foi possível acessar o banco de dados!')
+        
+        if not ClienteDal.ler_cliente(codigo, id_cliente):
+            raise IdError('Não existe uma cliente com esse ID!')
+        
+        if kwargs.get('senha') != None:
+            valida_senha = senha_valida(kwargs.get('senha'))
+            if valida_senha != True:
+                raise ValueError(valida_senha)
+        
+        if kwargs.get('nome') != None:
+            if (not kwargs.get('nome')) or 5 > len(kwargs.get('nome')) > 50:
+                raise ValueError(False, 'Nome inválido!')
+
+        if kwargs.get('telefone') != None:
+            telefone = telefone_valido(kwargs.get('telefone'))
+            if not telefone:
+                raise ValueError(False, 'Telefone inválido!')
+
+        if kwargs.get('email') != None:
+            if not email_valido(kwargs.get('email')):
+                raise ValueError(False, 'Email inválido!')
+
+        if kwargs.get('cpf') != None:
+            if not cpf_valido(kwargs.get('cpf')):
+                raise ValueError(False, 'CPF inválido!')
+        
+        return ClienteDal.alterar_cliente(id_cliente, codigo, **kwargs)
+    
+
+    @staticmethod
+    def remover_cliente(id_cliente: int):
+        codigo = ClienteDal.ler_arquivo()
+        if not codigo:
+            raise ServerError('Não foi possível acessar o banco de dados!')
+        
+        if not ClienteDal.ler_cliente(codigo, id_cliente):
+            raise IdError('Não existe um cliente com este ID')
+        
+        return ClienteDal.remover_cliente(id_cliente, codigo)
