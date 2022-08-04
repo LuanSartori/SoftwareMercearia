@@ -53,3 +53,13 @@ class Cliente(Pessoa):
         self.id = id
         self.senha = senha
         self.carrinho = []
+
+
+class Venda:
+    def __init__(self, id_venda: int, id_cliente: int, id_produto: int, quantidade: int, preco_unitario: float):
+        self.id_venda = id_venda
+        self.id_cliente = id_cliente
+        self.id_produto = id_produto
+        self.quantidade = quantidade
+        self.preco_unitario = preco_unitario
+        self.preco_total = preco_unitario * quantidade

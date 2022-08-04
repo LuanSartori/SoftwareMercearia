@@ -1,0 +1,10 @@
+[
+	{
+		"id_venda": 0,
+		"id_cliente": 0,
+		"id_produto": 0,
+		"quantidade": 5,
+		"preco_unitario": 1.00,
+		"preco_total": 5.00
+	}
+]

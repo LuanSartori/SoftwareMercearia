@@ -1,7 +1,6 @@
-from concurrent.futures.process import _ExceptionWithTraceback
 import json
 from operator import itemgetter
-from model import Categoria, Funcionario, Produto, Fornecedor, Lote, Cliente
+from model import Categoria, Funcionario, Produto, Fornecedor, Lote, Cliente, Venda
 
 
 class CategoriaDal:
@@ -783,3 +782,114 @@ class ClienteDal:
                     return (True, 'Cliente removido com sucesso!')
         except:
             return (False, 'Não foi possível remover o cliente!')
+
+
+class VendaDal:
+    @staticmethod
+    def ler_arquivo():
+    	try:
+            with open('banco_dados/vendas.json', 'r') as arq:
+                return json.load(arq)
+        except:
+            return False
+	
+	
+    @staticmethod
+    def ler_venda(id_venda: int, codigo: json, retorna_obj=True):
+        for i, v in enumerate(codigo):
+            if v['id_venda'] == id_venda:
+				
+                if retorna_obj:
+                    return (i, Venda(v['id_venda'],
+									 v['id_cliente'],
+									 v['id_produto'],
+									 v['quantidade'],
+									 v['preco_unitario']))
+                return (i, v)
+        return False
+    
+    
+    @staticmethod
+    def gerar_id():
+        try:
+            with open('banco_dados/ids.json', 'r') as arq:
+                codigo = json.load(arq)
+                if len( codigo['id_venda']['ids_vazios'] ) == 0:
+                    id = codigo['id_venda']['novo_id']
+                    codigo['id_venda']['novo_id'] += 1
+                else:
+                    id = codigo['id_venda']['ids_vazios'][0]
+                    codigo['id_venda']['ids_vazios'].pop(0)
+
+                with open('banco_dados/ids.json', 'w') as arq:
+                    json.dump(codigo, arq, indent=4)
+                    return id
+        except:
+            return (False, 'Erro interno do sistema')
+
+
+    @staticmethod
+    def cadastrar_venda(venda: Venda, codigo: json):
+        dado = {
+			"id_venda": venda.id_venda,
+			"id_cliente": venda.id_cliente,
+			"id_produto": venda.id_produto,
+			"quantidade": venda.quantidade,
+			"preco_unitario": venda.preco_unitario,
+			"preco_total": venda.preco_total
+		}
+		
+        codigo.append(dado)
+        codigo = sorted(codigo, key=itemgetter('id_venda'))
+		
+        try:
+            with open('banco_dados/vendas.json', 'w') as arq:
+                json.dump(codigo, arq, indent=4)
+                return (True, 'Venda cadastrada com sucesso!')
+        except:
+            return (False, 'Não foi possível cadastrar a venda!')
+	
+	
+    @staticmethod
+    def alterar_venda(id_venda: int, codigo: json, **kwargs):
+        index, venda = VendaDal.ler_venda(id_venda, codigo, retorna_obj=False)
+
+        alteracao = {
+			"id_cliente": kwargs.get('id_cliente'),
+			"id_produto": kwargs.get('id_produto'),
+			"quantidade": kwargs.get('quantidade'),
+			"preco_unitario": kwargs.get('preco_unitario'),
+			"preco_total": kwargs.get('preco_total')
+		}
+        for chave, valor in alteracao.items():
+            if valor != None:
+                venda[chave] = valor
+        
+        codigo[index] = venda
+        try:
+            with open('banco_dados/vendas.json', 'w') as arq:
+                json.dump(codigo, arq, indent=4)
+                return (True, 'Venda alterada com sucesso!')
+        except:
+            return (False, 'Não foi possível alterar a venda!')
+
+	
+    @staticmethod
+    def remover_cliente(id_venda: int, codigo: json):
+        index, venda = VendaDal.ler_venda(id_venda, codigo)
+        codigo.pop(index)
+
+        try:
+            with open('banco_dados/vendas.json', 'w') as arq:
+                json.dump(codigo, arq, indent=4)
+            
+            with open('banco_dados/ids.json', 'r') as arq:
+                codigo = json.load(arq)
+                codigo['id_venda']['ids_vazios'].append(id_venda)
+                codigo['id_venda']['ids_vazios'].sort()
+
+                with open('banco_dados/ids.json', 'w') as arq:
+                    json.dump(codigo, arq, indent=4)
+                    return (True, 'Venda removida com sucesso!')
+        except:
+            return (False, 'Não foi possível remover a venda!')
