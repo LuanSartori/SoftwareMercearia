@@ -5,7 +5,7 @@ class Categoria:
 
 
 class Produto:
-    def __init__(self, id: int, id_categoria: int, nome: str, marca: str, preco: float, quantidade: int=None, id_fornecedor: int=None):
+    def __init__(self, id: int, id_categoria: int, nome: str, marca: str, preco: float, quantidade: list=[], id_fornecedor: int=None):
         self.id = id
         self.id_categoria = id_categoria
         self.nome = nome

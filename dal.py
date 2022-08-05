@@ -1,4 +1,6 @@
+import snoop
 import json
+import datetime
 from operator import itemgetter
 from model import Categoria, Funcionario, Produto, Fornecedor, Lote, Cliente, Venda
 
@@ -267,6 +269,53 @@ class EstoqueDal:
                     return (True, 'Produto removido com sucesso!')
         except:
             return (False, 'Não foi possível remover o produto!')
+
+
+    @staticmethod
+    def verificar_validade(codigo: json):
+        data_hoje = datetime.datetime.now()
+        x = False
+
+        for n, categoria in enumerate(codigo):
+
+            # sem contar a categoria vencidos
+            if n == 1:
+                continue
+            
+            for index, produto in enumerate(categoria['produtos']):
+                produto['quantidade'] = sorted(produto['quantidade'], key=itemgetter(0))
+
+                for quantidade in produto['quantidade']:
+                    produto_val = datetime.datetime.strptime(quantidade[0], '%d/%m/%Y')
+
+                    if produto_val <= data_hoje:
+                        codigo = EstoqueDal.cadastrar_vencido(produto, quantidade, codigo)
+                        codigo[n]['produtos'][index]['quantidade'] = sorted(codigo[n]['produtos'][index]['quantidade'], key=itemgetter(0))
+                        codigo[n]['produtos'][index]['quantidade'].pop(0)
+                        
+                        try:
+                            with open('banco_dados/estoque.json', 'w') as arq:
+                                json.dump(codigo, arq, indent=4)
+                                x = True
+                        except:
+                            return False
+        
+        if x:
+            return (True, 'Produtos vencidos removidos!')
+        return (False, 'Sem produtos vencidos ;)')
+
+
+    @staticmethod
+    def cadastrar_vencido(produto: dict, quantidade: list, codigo: json):
+        dado = {
+            'id':         produto['id'],
+            'nome':       produto['nome'],
+            'vencido_em': quantidade[0],
+            'quantidade': quantidade[1]
+        }
+        # vai na categoria "vencidos" e adiciona o produto vencido
+        codigo[1]['produtos'].append(dado)
+        return codigo
 
 
 # --------------------------------------------------
@@ -787,7 +836,7 @@ class ClienteDal:
 class VendaDal:
     @staticmethod
     def ler_arquivo():
-    	try:
+        try:
             with open('banco_dados/vendas.json', 'r') as arq:
                 return json.load(arq)
         except:
@@ -893,3 +942,7 @@ class VendaDal:
                     return (True, 'Venda removida com sucesso!')
         except:
             return (False, 'Não foi possível remover a venda!')
+
+
+codigo = EstoqueDal.ler_arquivo()
+print(EstoqueDal.verificar_validade(codigo))

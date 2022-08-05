@@ -1,4 +1,5 @@
 import re
+import datetime
 from model import Categoria, Funcionario, Produto, Fornecedor, Lote, Cliente
 from dal import CategoriaDal, ClienteDal, EstoqueDal, FornecedorDal, FuncionarioDal, ClienteDal
 
@@ -78,7 +79,7 @@ class CategoriaController():
 
 class EstoqueController:
     @staticmethod
-    def cadastrar_produto(id_categoria: int, nome: str, marca: str, preco: float, quantidade: int=None, id_fornecedor: int=None):
+    def cadastrar_produto(id_categoria: int, nome: str, marca: str, preco: float, validade: str, quantidade: int=None, id_fornecedor: int=None):
         codigo = CategoriaDal.ler_arquivo()
         codigo_estoque = EstoqueDal.ler_arquivo()
         if not codigo or not codigo_estoque:
@@ -94,9 +95,15 @@ class EstoqueController:
             if p['nome'] == nome:
                 raise ValueError('Já existe um produto com esse nome')
 
+        try:
+            validade_obj = datetime.datetime.strptime(validade, '%d/%m/%Y')
+            if validade_obj <= datetime.datetime.now():
+                raise ValueError('O produto já está vencido!')
+        except ValueError as arg:
+            raise ValueError('Data de validade inválida!', arg)
+
         id = EstoqueDal.gerar_id()
-        
-        produto = Produto(id, id_categoria, nome, marca, preco, quantidade, id_fornecedor)
+        produto = Produto(id, id_categoria, nome, marca, preco, validade, quantidade, id_fornecedor)
         return EstoqueDal.cadastrar_produto(produto, codigo_estoque)
 
 
