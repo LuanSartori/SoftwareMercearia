@@ -1,9 +1,10 @@
+import snoop
 import re
 import datetime
 from model import Categoria, Funcionario, Produto, Fornecedor, Lote, Cliente
 from dal import CategoriaDal, ClienteDal, EstoqueDal, FornecedorDal, FuncionarioDal, ClienteDal
 
-from utils import cnpj_valido, cpf_valido, email_valido, telefone_valido, senha_valida
+from utils import cnpj_valido, cpf_valido, email_valido, telefone_valido, senha_valida, validar_tempo, proximo_lote
 
 
 class IdError(Exception):
@@ -225,7 +226,7 @@ class FornecedorController:
     
 
     @staticmethod
-    def cadastrar_lote(id_fornecedor: int, preco_lote: float, id_categoria: int, id_produto: id, quantidade: int, tempo: list=None):
+    def cadastrar_lote(id_fornecedor: int, preco_lote: float, id_categoria: int, id_produto: id, quantidade: int, tempo: dict=None):
         # Na view vai perguntar se o produto do lote já existe no sistema ou se ele quer criar um !!!
 
         codigo = FornecedorDal.ler_arquivo()
@@ -240,13 +241,14 @@ class FornecedorController:
             raise IdError('Não existe um produto com este ID', id_produto)
 
         if tempo != None:
-            valida = ['dia', 'semana', 'mês']
-            if not tempo[1] in valida:
-                raise ValueError('Tempo inválido!', tempo[1])
-        
+            try:
+                validar_tempo(tempo)
+            except:
+                raise ValueError('Tempo inválido!')
+
         
         id = FornecedorDal.gerar_id_lote()
-        lote = Lote(id, preco_lote, id_produto, quantidade, tempo)
+        lote = Lote(id, preco_lote, id_produto, id_categoria, quantidade, tempo)
         return FornecedorDal.cadastrar_lote(id_fornecedor, lote, codigo)
     
     
@@ -284,6 +286,27 @@ class FornecedorController:
             raise IdError('Não existe um lote com esse ID neste fornecedor!')
         
         return FornecedorDal.remover_lote(id_fornecedor, id_lote, codigo)
+    
+
+    @staticmethod
+    def lote_recebido(id_fornecedor: int, id_lote: int, quantidade: list):
+        codigo_fornecedor = FornecedorDal.ler_arquivo()
+        codigo_estoque = EstoqueDal.ler_arquivo()
+        if not codigo_fornecedor or not codigo_estoque:
+            raise ServerError('Não foi possível acessar o banco de dados!')
+        
+        if not FornecedorDal.ler_fornecedor(codigo_fornecedor, id_fornecedor):
+            raise IdError('Não existe um fornecedor com este ID!')
+        if not FornecedorDal.ler_lote(id_fornecedor, codigo_fornecedor, id_lote):
+            raise IdError('Não existe um lote com esse ID!')
+        
+        try:
+            for v in quantidade:
+                datetime.datetime.strptime(v[0], '%d/%m/%Y')
+        except:
+            raise ValueError('Quantidade inválida!')
+        
+        return FornecedorDal.lote_recebido(id_fornecedor, id_lote, quantidade, codigo_fornecedor, codigo_estoque)
 
 
 # --------------------------------------------------

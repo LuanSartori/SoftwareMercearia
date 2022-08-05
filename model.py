@@ -24,17 +24,20 @@ class Pessoa:
 
 
 class Fornecedor(Pessoa):
-    def __init__(self, id: int, nome: str, telefone: str = None, email: str = None, cnpj: str=None):
+    def __init__(self, id: int, nome: str, telefone: str = None, email: str = None, cnpj: str=None, lotes: list=[]):
         super().__init__(nome, telefone=telefone, email=email)
         self.id = id
         self.cnpj = cnpj
+        self.lotes = lotes
+
 
 
 class Lote():
-    def __init__(self, id_lote: int, preco_lote: float, id_produto: int, quantidade: int, tempo: list=None):
+    def __init__(self, id_lote: int, preco_lote: float, id_produto: int, id_categoria: int, quantidade: int, tempo: dict):
         self.id_lote = id_lote
         self.preco_lote = preco_lote
         self.id_produto = id_produto
+        self.id_categoria = id_categoria
         self.quantidade = quantidade
         self.tempo = tempo
 

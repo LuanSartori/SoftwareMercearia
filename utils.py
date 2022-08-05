@@ -1,5 +1,6 @@
 from itertools import cycle
 import re
+import datetime
 
 
 def telefone_valido(telefone):
@@ -70,3 +71,22 @@ def senha_valida(senha: str):
         return (False, 'A senha não deve ter espaços vazios!')
     else:
         return True
+
+
+def validar_tempo(tempo: dict):
+    try:
+        if not int(tempo['intervalo']) > 0:
+            raise ValueError()
+        datetime.datetime.strptime(tempo['proximo'], '%d/%m/%Y')
+        return True
+    except:
+        return False
+
+
+def proximo_lote(tempo: dict):
+    proximo = datetime.datetime.strptime(tempo['proximo'], '%d/%m/%Y')
+    proximo += datetime.timedelta(days=int(tempo['intervalo']))
+
+    proximo = datetime.datetime.strftime(proximo, '%d/%m/%Y')
+    tempo['proximo'] = proximo
+    return tempo

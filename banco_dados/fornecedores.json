@@ -18,11 +18,12 @@
                 "id_lote": 0,
                 "preco_lote": 600.0,
                 "id_produto": 0,
+                "id_categoria": 2,
                 "quantidade": 35,
-                "tempo": [
-                    7,
-                    "dia"
-                ]
+                "tempo": {
+                    "intervalo": 7,
+                    "proximo": "19/08/2022"
+                }
             }
         ]
     }

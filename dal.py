@@ -3,6 +3,7 @@ import json
 import datetime
 from operator import itemgetter
 from model import Categoria, Funcionario, Produto, Fornecedor, Lote, Cliente, Venda
+from utils import proximo_lote
 
 
 class CategoriaDal:
@@ -276,13 +277,13 @@ class EstoqueDal:
         data_hoje = datetime.datetime.now()
         x = False
 
-        for n, categoria in enumerate(codigo):
+        for index_categoria, categoria in enumerate(codigo):
 
             # sem contar a categoria vencidos
-            if n == 1:
+            if index_categoria == 1:
                 continue
             
-            for index, produto in enumerate(categoria['produtos']):
+            for index_produto, produto in enumerate(categoria['produtos']):
                 produto['quantidade'] = sorted(produto['quantidade'], key=itemgetter(0))
 
                 for quantidade in produto['quantidade']:
@@ -290,8 +291,10 @@ class EstoqueDal:
 
                     if produto_val <= data_hoje:
                         codigo = EstoqueDal.cadastrar_vencido(produto, quantidade, codigo)
-                        codigo[n]['produtos'][index]['quantidade'] = sorted(codigo[n]['produtos'][index]['quantidade'], key=itemgetter(0))
-                        codigo[n]['produtos'][index]['quantidade'].pop(0)
+                        codigo[index_categoria]['produtos'][index_produto]['quantidade'] = sorted(
+                            codigo[index_categoria]['produtos'][index_produto]['quantidade'], key=itemgetter(0)
+                            )
+                        codigo[index_categoria]['produtos'][index_produto]['quantidade'].pop(0)
                         
                         try:
                             with open('banco_dados/estoque.json', 'w') as arq:
@@ -316,7 +319,42 @@ class EstoqueDal:
         # vai na categoria "vencidos" e adiciona o produto vencido
         codigo[1]['produtos'].append(dado)
         return codigo
+    
 
+    @staticmethod
+    def remover_vencidos(codigo: json, id_produto=None):
+        if not id_produto:
+            codigo[1]['produtos'] = []
+        else:
+            for i, p in enumerate(codigo[1]['produtos']):
+                if p['id'] == id_produto:
+                    codigo[1]['produtos'].pop(i)
+        
+        try:
+            with open('banco_dados/estoque.json', 'w') as arq:
+                json.dump(codigo, arq, indent=4)
+                return (True, 'Produtos vencidos removidos com sucesso!')
+        except:
+            return (False, 'Não foi possível remover os produtos vencidos!')         
+
+
+    @staticmethod
+    def adicionar_quantidade(quantidade: list, id_produto: int, id_categoria: int, codigo: json):
+        index_categoria = EstoqueDal.pesquisar_arquivo(codigo, id_categoria)
+        index, produto = EstoqueDal.ler_produto(id_categoria, id_produto, codigo, False)
+        x = 0
+
+        for v in quantidade:
+            for i, q in enumerate(codigo[index_categoria]['produtos'][index]['quantidade']):
+                if v[0] == q[0]:
+                    codigo[index_categoria]['produtos'][index]['quantidade'][i][1] += v[1]
+                    x = 1
+            if x == 0:
+                codigo[index_categoria]['produtos'][index]['quantidade'].append(v)
+            x = 0
+
+        codigo[index_categoria]['produtos'][index]['quantidade'] = sorted(codigo[index_categoria]['produtos'][index]['quantidade'], key=itemgetter(0))
+        return codigo
 
 # --------------------------------------------------
 # --------------------------------------------------
@@ -333,16 +371,18 @@ class FornecedorDal:
     
 
     @staticmethod
-    def ler_fornecedor(codigo, id, retorna_obj=True):
+    def ler_fornecedor(codigo: json, id_fornecedor: int, retorna_obj=True):
         for i, f in enumerate(codigo):
-            if f['id'] == id:
+            if f['id'] == id_fornecedor:
                 
                 if retorna_obj:
                     return (i, Fornecedor(f['id'],
                                           f['nome'],
                                           f['telefone'],
                                           f['email'],
-                                          f['cnpj']))
+                                          f['cnpj'],
+                                          f['lotes']
+                                          ))
                 else:
                     return (i, f)
         return False
@@ -370,11 +410,12 @@ class FornecedorDal:
     @staticmethod
     def cadastrar_fornecedor(fornecedor: Fornecedor, codigo: json) -> tuple:
         dado = {
-            "id": fornecedor.id,
-            "nome": fornecedor.nome,
+                  "id": fornecedor.id,
+                "nome": fornecedor.nome,
             "telefone": fornecedor.telefone,
-            "email": fornecedor.email,
-            "cnpj": fornecedor.cnpj
+               "email": fornecedor.email,
+                "cnpj": fornecedor.cnpj,
+               "lotes": fornecedor.lotes
         }
 
         codigo.append(dado)
@@ -388,7 +429,7 @@ class FornecedorDal:
     
 
     @staticmethod
-    def alterar_fornecedor(id: int, codigo: json, **kwargs):
+    def alterar_fornecedor(id_fornecedor: int, codigo: json, **kwargs):
         index, fornecedor = FornecedorDal.ler_fornecedor(codigo, id)
 
         alteracao = {
@@ -445,6 +486,7 @@ class FornecedorDal:
                     return (i, Lote(lote['id_lote'],
                                     lote['preco_lote'],
                                     lote['id_produto'],
+                                    lote['id_categoria'],
                                     lote['quantidade'],
                                     lote['tempo'])
                                     )
@@ -477,11 +519,12 @@ class FornecedorDal:
         index, fornecedor = FornecedorDal.ler_fornecedor(codigo, id_fornecedor)
 
         dado = {
-            'id_lote':    lote.id_lote,
-            'preco_lote': lote.preco_lote,
-            'id_produto': lote.id_produto,
-            'quantidade': lote.quantidade,
-            'tempo':      lote.tempo
+                 'id_lote':    lote.id_lote,
+              'preco_lote': lote.preco_lote,
+              'id_produto': lote.id_produto,
+            'id_categoria': lote.id_categoria,
+              'quantidade': lote.quantidade,
+                   'tempo':      lote.tempo
         }
         codigo[index]['lotes'].append(dado)
         codigo[index]['lotes'] = sorted(codigo[index]['lotes'], key=itemgetter('id_lote'))
@@ -501,6 +544,7 @@ class FornecedorDal:
         alteracao = {
             'preco_lote':   kwargs.get('preco_lote'),
             'id_produto':   kwargs.get('id_produto'),
+            'id_categoria': kwargs.get('id_categoria'),
             'quantidade':   kwargs.get('quantidade'),
             'tempo':        kwargs.get('tempo')
         }
@@ -539,6 +583,25 @@ class FornecedorDal:
                     return (True, 'Lote removido com sucesso!')
         except:
             return (False, 'Não foi possível remover o lote!')
+    
+
+    @staticmethod
+    def lote_recebido(id_fornecedor: int, id_lote: int, quantidade: list, codigo_fornecedor: json, codigo_estoque: json):
+        index_f, fornecedor = FornecedorDal.ler_fornecedor(codigo_fornecedor, id_fornecedor, False)
+        index_l, lote = FornecedorDal.ler_lote(id_fornecedor, codigo_fornecedor, id_lote, False)
+
+        codigo_fornecedor[index_f]['lotes'][index_l]['tempo'] = proximo_lote(lote['tempo'])
+        codigo_estoque = EstoqueDal.adicionar_quantidade(quantidade, lote['id_produto'], lote['id_categoria'], codigo_estoque)
+
+        try:
+            with open('banco_dados/fornecedores.json', 'w') as arq:
+                json.dump(codigo_fornecedor, arq, indent=4)
+            
+            with open('banco_dados/estoque.json', 'w') as arq:
+                json.dump(codigo_estoque, arq, indent=4)
+                return (True, 'Lote recebido com sucesso!')
+        except:
+            return (False, 'Falha ao receber o lote!')
 
 
 # --------------------------------------------------
@@ -942,7 +1005,3 @@ class VendaDal:
                     return (True, 'Venda removida com sucesso!')
         except:
             return (False, 'Não foi possível remover a venda!')
-
-
-codigo = EstoqueDal.ler_arquivo()
-print(EstoqueDal.verificar_validade(codigo))
