@@ -284,24 +284,35 @@ class EstoqueDal:
                 continue
             
             for index_produto, produto in enumerate(categoria['produtos']):
-                produto['quantidade'] = sorted(produto['quantidade'], key=itemgetter(0))
 
+                # transforma todas as datas em objetos datetime e os ordena
+                for i, q in enumerate(produto['quantidade']):
+                    d = datetime.datetime.strptime(q[0], '%d/%m/%Y')
+                    codigo[index_categoria]['produtos'][index_produto]['quantidade'][i][0] = d
+
+                codigo[index_categoria]['produtos'][index_produto]['quantidade'] = sorted(
+                    codigo[index_categoria]['produtos'][index_produto]['quantidade'],
+                    key=itemgetter(0))
+
+                # faz a verificacao dos produtos vencidos
                 for quantidade in produto['quantidade']:
-                    produto_val = datetime.datetime.strptime(quantidade[0], '%d/%m/%Y')
-
-                    if produto_val <= data_hoje:
+                    if quantidade[0] <= data_hoje:
+                        quantidade[0] = datetime.datetime.strftime(quantidade[0], '%d/%m/%Y')
                         codigo = EstoqueDal.cadastrar_vencido(produto, quantidade, codigo)
-                        codigo[index_categoria]['produtos'][index_produto]['quantidade'] = sorted(
-                            codigo[index_categoria]['produtos'][index_produto]['quantidade'], key=itemgetter(0)
-                            )
+
                         codigo[index_categoria]['produtos'][index_produto]['quantidade'].pop(0)
-                        
-                        try:
-                            with open('banco_dados/estoque.json', 'w') as arq:
-                                json.dump(codigo, arq, indent=4)
-                                x = True
-                        except:
-                            return False
+
+                # transforma todos os objetos em datetime em string para armazenar no banco de dados
+                for i, q in enumerate(produto['quantidade']):
+                    d = datetime.datetime.strftime(q[0], '%d/%m/%Y')
+                    codigo[index_categoria]['produtos'][index_produto]['quantidade'][i][0] = d
+
+            try:
+                with open('banco_dados/estoque.json', 'w') as arq:
+                    json.dump(codigo, arq, indent=4)
+                    x = True
+            except:
+                return False
         
         if x:
             return (True, 'Produtos vencidos removidos!')
