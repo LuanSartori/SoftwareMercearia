@@ -1,3 +1,4 @@
+from operator import itemgetter
 import snoop
 import re
 import datetime
@@ -147,6 +148,85 @@ class EstoqueController:
                     raise Exception( {'id_fornecedor': fornecedor['id'], 'id_lote': lote['id_lote']} )
         
         return EstoqueDal.remover_produto(id_produto, id_categoria, codigo_estoque)
+
+
+    @staticmethod
+    def verificar_validade():
+        codigo = EstoqueDal.ler_arquivo()
+        if not codigo:
+            raise ServerError('Não foi possível acessar o banco de dados!')
+
+        data_hoje = datetime.datetime.now()
+
+        for index_categoria, categoria in enumerate(codigo):
+
+            # sem contar a categoria vencidos
+            if index_categoria == 1:
+                continue
+            
+            for index_produto, produto in enumerate(categoria['produtos']):
+
+                # transforma todas as datas em objetos datetime e os ordena
+                for i, q in enumerate(produto['quantidade']):
+                    d = datetime.datetime.strptime(q[0], '%d/%m/%Y')
+                    codigo[index_categoria]['produtos'][index_produto]['quantidade'][i][0] = d
+
+                codigo[index_categoria]['produtos'][index_produto]['quantidade'] = sorted(
+                    codigo[index_categoria]['produtos'][index_produto]['quantidade'],
+                    key=itemgetter(0))
+
+                # faz a verificacao dos produtos vencidos
+                for quantidade in produto['quantidade']:
+                    if quantidade[0] <= data_hoje:
+                        quantidade[0] = datetime.datetime.strftime(quantidade[0], '%d/%m/%Y')
+                        codigo = EstoqueDal.cadastrar_vencido(produto, quantidade, codigo)
+
+                        codigo[index_categoria]['produtos'][index_produto]['quantidade'].pop(0)
+
+                # transforma todos os objetos datetime em string para armazenar no banco de dados
+                for i, q in enumerate(produto['quantidade']):
+                    d = datetime.datetime.strftime(q[0], '%d/%m/%Y')
+                    codigo[index_categoria]['produtos'][index_produto]['quantidade'][i][0] = d
+        
+        return EstoqueDal.verificar_validade(codigo)
+
+
+    @staticmethod
+    def adicionar_quantidade(quantidade: list, id_produto: int, id_categoria: int, retorna_codigo=False):
+        codigo = EstoqueDal.ler_arquivo()
+        if not codigo:
+            raise ServerError('Não foi possível acessar o banco de dados!')
+
+        index_categoria = EstoqueDal.pesquisar_arquivo(codigo, id_categoria)
+        index_produto, produto = EstoqueDal.ler_produto(id_categoria, id_produto, codigo, False)
+        x = 0
+
+        for v in quantidade:
+            for i, q in enumerate(codigo[index_categoria]['produtos'][index_produto]['quantidade']):
+                if v[0] == q[0]:
+                    codigo[index_categoria]['produtos'][index_produto]['quantidade'][i][1] += v[1]
+                    x = 1
+            if x == 0:
+                codigo[index_categoria]['produtos'][index_produto]['quantidade'].append(v)
+            x = 0
+
+        # transforma todas as datas em objetos datetime e os ordena
+        for i, q in enumerate(produto['quantidade']):
+            d = datetime.datetime.strptime(q[0], '%d/%m/%Y')
+            codigo[index_categoria]['produtos'][index_produto]['quantidade'][i][0] = d
+
+        codigo[index_categoria]['produtos'][index_produto]['quantidade'] = sorted(
+            codigo[index_categoria]['produtos'][index_produto]['quantidade'],
+            key=itemgetter(0))
+        
+        # transforma todos os objetos datetime em string para armazenar no banco de dados
+        for i, q in enumerate(produto['quantidade']):
+            d = datetime.datetime.strftime(q[0], '%d/%m/%Y')
+            codigo[index_categoria]['produtos'][index_produto]['quantidade'][i][0] = d
+
+        if retorna_codigo:
+            return EstoqueDal.adicionar_quantidade(codigo, retorna_codigo=True)
+        return EstoqueDal.adicionar_quantidade(codigo)
 
 
 # --------------------------------------------------
@@ -301,8 +381,11 @@ class FornecedorController:
             raise IdError('Não existe um lote com esse ID!')
         
         try:
+            data_hoje = datetime.datetime.now()
             for v in quantidade:
-                datetime.datetime.strptime(v[0], '%d/%m/%Y')
+                d = datetime.datetime.strptime(v[0], '%d/%m/%Y')
+                if d <= data_hoje:
+                    raise ValueError('Os produtos já estão vencidos')
         except:
             raise ValueError('Quantidade inválida!')
         
@@ -421,6 +504,10 @@ class FuncionarioController:
             return FuncionarioDal.remover_funcionario(id_funcionario, codigo)
 
 
+# --------------------------------------------------
+# --------------------------------------------------
+
+
 class ClienteController:
     @staticmethod
     def cadastrar_cliente(nome: str, cpf: str, senha: str, telefone: str=None, email: str=None):
@@ -501,3 +588,7 @@ class ClienteController:
             raise IdError('Não existe um cliente com este ID')
         
         return ClienteDal.remover_cliente(id_cliente, codigo)
+
+
+# --------------------------------------------------
+# --------------------------------------------------

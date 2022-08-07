@@ -2,6 +2,7 @@ import snoop
 import json
 import datetime
 from operator import itemgetter
+from controller import EstoqueController
 from model import Categoria, Funcionario, Produto, Fornecedor, Lote, Cliente, Venda
 from utils import proximo_lote
 
@@ -274,45 +275,13 @@ class EstoqueDal:
 
     @staticmethod
     def verificar_validade(codigo: json):
-        data_hoje = datetime.datetime.now()
         x = False
-
-        for index_categoria, categoria in enumerate(codigo):
-
-            # sem contar a categoria vencidos
-            if index_categoria == 1:
-                continue
-            
-            for index_produto, produto in enumerate(categoria['produtos']):
-
-                # transforma todas as datas em objetos datetime e os ordena
-                for i, q in enumerate(produto['quantidade']):
-                    d = datetime.datetime.strptime(q[0], '%d/%m/%Y')
-                    codigo[index_categoria]['produtos'][index_produto]['quantidade'][i][0] = d
-
-                codigo[index_categoria]['produtos'][index_produto]['quantidade'] = sorted(
-                    codigo[index_categoria]['produtos'][index_produto]['quantidade'],
-                    key=itemgetter(0))
-
-                # faz a verificacao dos produtos vencidos
-                for quantidade in produto['quantidade']:
-                    if quantidade[0] <= data_hoje:
-                        quantidade[0] = datetime.datetime.strftime(quantidade[0], '%d/%m/%Y')
-                        codigo = EstoqueDal.cadastrar_vencido(produto, quantidade, codigo)
-
-                        codigo[index_categoria]['produtos'][index_produto]['quantidade'].pop(0)
-
-                # transforma todos os objetos em datetime em string para armazenar no banco de dados
-                for i, q in enumerate(produto['quantidade']):
-                    d = datetime.datetime.strftime(q[0], '%d/%m/%Y')
-                    codigo[index_categoria]['produtos'][index_produto]['quantidade'][i][0] = d
-
-            try:
-                with open('banco_dados/estoque.json', 'w') as arq:
-                    json.dump(codigo, arq, indent=4)
-                    x = True
-            except:
-                return False
+        try:
+            with open('banco_dados/estoque.json', 'w') as arq:
+                json.dump(codigo, arq, indent=4)
+                x = True
+        except:
+            return False
         
         if x:
             return (True, 'Produtos vencidos removidos!')
@@ -327,6 +296,13 @@ class EstoqueDal:
             'vencido_em': quantidade[0],
             'quantidade': quantidade[1]
         }
+        
+        # verifica se a data do produto vencido já não existe na categoria vencidos
+        for i, v in enumerate(codigo[1]['produtos']):
+            if v['vencido_em'] == dado['vencido_em']:
+                codigo[1]['produtos'][i]['quantidade'] += dado['quantidade']
+                return codigo
+        
         # vai na categoria "vencidos" e adiciona o produto vencido
         codigo[1]['produtos'].append(dado)
         return codigo
@@ -350,22 +326,17 @@ class EstoqueDal:
 
 
     @staticmethod
-    def adicionar_quantidade(quantidade: list, id_produto: int, id_categoria: int, codigo: json):
-        index_categoria = EstoqueDal.pesquisar_arquivo(codigo, id_categoria)
-        index, produto = EstoqueDal.ler_produto(id_categoria, id_produto, codigo, False)
-        x = 0
+    def adicionar_quantidade(codigo: json, retorna_codigo=False):
+        if retorna_codigo:
+            return codigo
+        
+        try:
+            with open('banco_dados/estoque.json', 'w') as arq:
+                json.dump(codigo, arq, indent=4)
+                return (True, 'Produtos adicionados com sucesso!')
+        except:
+            return (False, 'Não foi possível adicionar os produtos!')
 
-        for v in quantidade:
-            for i, q in enumerate(codigo[index_categoria]['produtos'][index]['quantidade']):
-                if v[0] == q[0]:
-                    codigo[index_categoria]['produtos'][index]['quantidade'][i][1] += v[1]
-                    x = 1
-            if x == 0:
-                codigo[index_categoria]['produtos'][index]['quantidade'].append(v)
-            x = 0
-
-        codigo[index_categoria]['produtos'][index]['quantidade'] = sorted(codigo[index_categoria]['produtos'][index]['quantidade'], key=itemgetter(0))
-        return codigo
 
 # --------------------------------------------------
 # --------------------------------------------------
@@ -602,7 +573,7 @@ class FornecedorDal:
         index_l, lote = FornecedorDal.ler_lote(id_fornecedor, codigo_fornecedor, id_lote, False)
 
         codigo_fornecedor[index_f]['lotes'][index_l]['tempo'] = proximo_lote(lote['tempo'])
-        codigo_estoque = EstoqueDal.adicionar_quantidade(quantidade, lote['id_produto'], lote['id_categoria'], codigo_estoque)
+        codigo_estoque = EstoqueController.adicionar_quantidade(quantidade, lote['id_produto'], lote['id_categoria'], retorna_codigo=True)
 
         try:
             with open('banco_dados/fornecedores.json', 'w') as arq:
