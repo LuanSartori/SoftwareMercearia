@@ -2,7 +2,7 @@ from operator import itemgetter
 import datetime
 
 from model import Categoria, Funcionario, Produto, Fornecedor, Lote, Cliente
-from dal import CategoriaDal, ClienteDal, EstoqueDal, FornecedorDal, FuncionarioDal, ClienteDal
+from dal import IdDal, CategoriaDal, ClienteDal, EstoqueDal, FornecedorDal, FuncionarioDal, ClienteDal
 from utils import cnpj_valido, cpf_valido, email_valido, telefone_valido, senha_valida, validar_tempo, proximo_lote
 
 
@@ -14,6 +14,9 @@ class IdError(Exception):
 class ServerError(Exception):
     def __init__(self, *objects):
         pass
+
+# --------------------------------------------------
+# --------------------------------------------------
 
 
 class CategoriaController():
@@ -30,7 +33,7 @@ class CategoriaController():
             raise IdError(False, 'Esse nome é muito grande!')
         
         
-        id = CategoriaDal.gerar_id()
+        id = IdDal.gerar_id('id_categoria')
         categoria = Categoria(categoria, id)
         return CategoriaDal.salvar_categoria(categoria, codigo, codigo_estoque)
 
@@ -105,7 +108,7 @@ class EstoqueController:
         except ValueError as arg:
             raise ValueError('Data de validade inválida!', arg)
 
-        id = EstoqueDal.gerar_id()
+        id = IdDal.gerar_id('id_produto')
         produto = Produto(id, id_categoria, nome, marca, preco, validade, quantidade, id_fornecedor)
         return EstoqueDal.cadastrar_produto(produto, codigo_estoque)
 
@@ -262,7 +265,7 @@ class FornecedorController:
         if not cnpj_valido(cnpj):
             raise ValueError('CNPJ inválido!')
         
-        id = FornecedorDal.gerar_id_fornecedor()
+        id = IdDal.gerar_id('id_fornecedor')
         fornecedor = Fornecedor(id, nome, telefone, email, cnpj)
         return FornecedorDal.cadastrar_fornecedor(fornecedor, codigo)
     
@@ -331,7 +334,7 @@ class FornecedorController:
                 raise ValueError('Tempo inválido!')
 
         
-        id = FornecedorDal.gerar_id_lote()
+        id = IdDal.gerar_id('id_lote')
         lote = Lote(id, preco_lote, id_produto, id_categoria, quantidade, tempo)
         return FornecedorDal.cadastrar_lote(id_fornecedor, lote, codigo)
     
@@ -436,9 +439,9 @@ class FuncionarioController:
             raise ValueError('CPF inválido!')
         
         if admin:
-            id = FuncionarioDal.gerar_id_admin()
+            id = IdDal.gerar_id('id_admin')
         else:
-            id = FuncionarioDal.gerar_id_funcionario()
+            id = IdDal.gerar_id('id_funcionario')
 
         funcionario = Funcionario(id, nome, cpf, cargo, senha, telefone, email)
         if admin:
@@ -544,7 +547,7 @@ class ClienteController:
         if not cpf_valido:
             raise ValueError('CPF inválido!')
         
-        id = ClienteDal.gerar_id()
+        id = IdDal.gerar_id('id_cliente')
         cliente = Cliente(nome, cpf, id, senha, telefone, email)
         return ClienteDal.cadastrar_cliente(cliente, codigo)
 

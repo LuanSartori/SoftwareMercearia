@@ -5,6 +5,36 @@ from controller import EstoqueController
 from model import Categoria, Funcionario, Produto, Fornecedor, Lote, Cliente, Venda
 from utils import proximo_lote
 
+class IdDal:
+    @staticmethod
+    def gerar_id(chave: str) -> int:
+        try:
+            with open('banco_dados/ids.json', 'r') as arq:
+                codigo = json.load(arq)
+                if len( codigo[chave]['ids_vazios'] ) == 0:
+                    id_gerado = codigo[chave]['novo_id']
+                    codigo[chave]['novo_id'] += 1
+                else:
+                    id_gerado = codigo[chave]['ids_vazios'][0]
+                    codigo[chave]['ids_vazios'].pop(0)
+
+                with open('banco_dados/ids.json', 'w') as arq:
+                    json.dump(codigo, arq, indent=4)
+                    return id_gerado
+        except:
+            return (False, 'Erro interno do sistema')
+
+
+    @staticmethod
+    def remover_id(chave: str, id: int):
+        with open('banco_dados/ids.json', 'r') as arq:
+            codigo = json.load(arq)
+            codigo[chave]['ids_vazios'].append(id)
+            codigo[chave]['ids_vazios'].sort()
+
+            with open('banco_dados/ids.json', 'w') as arq:
+                json.dump(codigo, arq, indent=4)
+
 
 class CategoriaDal:
     @staticmethod
@@ -20,25 +50,6 @@ class CategoriaDal:
     def salvar_arquivo(codigo: json) -> bool:
         with open('banco_dados/categorias.json', 'w') as arq:
             json.dump(codigo, arq, indent=4)
-
-
-    @staticmethod
-    def gerar_id() -> int:
-        try:
-            with open('banco_dados/ids.json', 'r') as arq:
-                codigo = json.load(arq)
-                if len( codigo['id_categoria']['ids_vazios'] ) == 0:
-                    id = codigo['id_categoria']['novo_id']
-                    codigo['id_categoria']['novo_id'] += 1
-                else:
-                    id = codigo['id_categoria']['ids_vazios'][0]
-                    codigo['id_categoria']['ids_vazios'].pop(0)
-
-                with open('banco_dados/ids.json', 'w') as arq:
-                    json.dump(codigo, arq, indent=4)
-                    return id
-        except:
-            return (False, 'Erro interno do sistema')
 
 
     @staticmethod
@@ -80,16 +91,11 @@ class CategoriaDal:
             codigo.pop(index)
             CategoriaDal.salvar_arquivo(codigo)
 
-            with open('banco_dados/ids.json', 'r') as arq:
-                codigo = json.load(arq)
-                codigo['id_categoria']['ids_vazios'].append(id_categoria)
-                codigo['id_categoria']['ids_vazios'].sort()
+            # adiciona o id removido ao banco de dados e remove a categoria do estoque
+            IdDal.remover_id('id_categoria', id_categoria)
+            EstoqueDal.remover_categoria(id_categoria, codigo_estoque)
 
-                with open('banco_dados/ids.json', 'w') as arq:
-                    json.dump(codigo, arq, indent=4)
-                    EstoqueDal.remover_categoria(id_categoria, codigo_estoque)
-
-                    return (True, 'Categoria removida com sucesso!')
+            return (True, 'Categoria removida com sucesso!')
         except:
             return (False, 'Não foi possível remover a categoria!')
 
@@ -158,25 +164,6 @@ class EstoqueDal:
             return (True, 'Categoria Removida com sucesso')
         except:
             return (False, 'Não foi possível remover a categoria!')
-     
-    
-    @staticmethod
-    def gerar_id() -> int:
-        try:
-            with open('banco_dados/ids.json', 'r') as arq:
-                codigo = json.load(arq)
-                if len( codigo['id_produto']['ids_vazios'] ) == 0:
-                    id = codigo['id_produto']['novo_id']
-                    codigo['id_produto']['novo_id'] += 1
-                else:
-                    id = codigo['id_produto']['ids_vazios'][0]
-                    codigo['id_produto']['ids_vazios'].pop(0)
-
-                with open('banco_dados/ids.json', 'w') as arq:
-                    json.dump(codigo, arq, indent=4)
-                    return id
-        except:
-            return (False, 'Erro interno do sistema')
 
 
     @staticmethod
@@ -263,14 +250,11 @@ class EstoqueDal:
         
         try:
             EstoqueDal.salvar_arquivo(codigo)
-            
-            with open('banco_dados/ids.json', 'r') as arq:
-                codigo = json.load(arq)
-                codigo['id_produto']['ids_vazios'].append(id_produto)
-                codigo['id_produto']['ids_vazios'].sort()
-                with open('banco_dados/ids.json', 'w') as arq:
-                    json.dump(codigo, arq, indent=4)
-                    return (True, 'Produto removido com sucesso!')
+
+            # adiciona o id removido ao banco de dados
+            IdDal.remover_id('id_produto', id_produto)
+
+            return (True, 'Produto removido com sucesso!')
         except:
             return (False, 'Não foi possível remover o produto!')
 
@@ -370,25 +354,6 @@ class FornecedorDal:
                 else:
                     return (i, f)
         return False
-    
-
-    @staticmethod
-    def gerar_id_fornecedor():
-        try:
-            with open('banco_dados/ids.json', 'r') as arq:
-                codigo = json.load(arq)
-                if len( codigo['id_fornecedor']['ids_vazios'] ) == 0:
-                    id = codigo['id_fornecedor']['novo_id']
-                    codigo['id_fornecedor']['novo_id'] += 1
-                else:
-                    id = codigo['id_fornecedor']['ids_vazios'][0]
-                    codigo['id_fornecedor']['ids_vazios'].pop(0)
-
-                with open('banco_dados/ids.json', 'w') as arq:
-                    json.dump(codigo, arq, indent=4)
-                    return id
-        except:
-            return (False, 'Erro interno do sistema')
 
 
     @staticmethod
@@ -442,13 +407,10 @@ class FornecedorDal:
         try:
             FornecedorDal.salvar_arquivo(codigo)
             
-            with open('banco_dados/ids.json', 'r') as arq:
-                codigo = json.load(arq)
-                codigo['id_fornecedor']['ids_vazios'].append(id)
-                codigo['id_fornecedor']['ids_vazios'].sort()
-                with open('banco_dados/ids.json', 'w') as arq:
-                    json.dump(codigo, arq, indent=4)
-                    return (True, 'Fornecedor removido com sucesso!')
+            # adiciona o id removido ao banco de dados
+            IdDal.remover_id('id_fornecedor', id_fornecedor)
+
+            return (True, 'Fornecedor removido com sucesso!')
         except:
             return (False, 'Não foi possível remover este fornecedor!')
 
@@ -474,25 +436,6 @@ class FornecedorDal:
                 else:
                     return (i, lote)
         return False
-
-    
-    @staticmethod
-    def gerar_id_lote() -> int:
-        try:
-            with open('banco_dados/ids.json', 'r') as arq:
-                codigo = json.load(arq)
-                if len( codigo['id_lote']['ids_vazios'] ) == 0:
-                    id = codigo['id_lote']['novo_id']
-                    codigo['id_lote']['novo_id'] += 1
-                else:
-                    id = codigo['id_lote']['ids_vazios'][0]
-                    codigo['id_lote']['ids_vazios'].pop(0)
-
-                with open('banco_dados/ids.json', 'w') as arq:
-                    json.dump(codigo, arq, indent=4)
-                    return id
-        except:
-            return (False, 'Erro interno do sistema')
 
 
     @staticmethod
@@ -550,15 +493,9 @@ class FornecedorDal:
 
         try:
             FornecedorDal.salvar_arquivo(codigo)
-            
-            with open('banco_dados/ids.json', 'r') as arq:
-                codigo = json.load(arq)
-                codigo['id_lote']['ids_vazios'].append(id_lote)
-                codigo['id_lote']['ids_vazios'].sort()
+            IdDal.remover_id('id_lote', id_lote)
 
-                with open('banco_dados/ids.json', 'w') as arq:
-                    json.dump(codigo, arq, indent=4)
-                    return (True, 'Lote removido com sucesso!')
+            return (True, 'Lote removido com sucesso!')
         except:
             return (False, 'Não foi possível remover o lote!')
     
@@ -631,44 +568,6 @@ class FuncionarioDal:
                     return (i, f)
         
         return False
-
-    
-    @staticmethod
-    def gerar_id_funcionario() -> int:
-        try:
-            with open('banco_dados/ids.json', 'r') as arq:
-                codigo = json.load(arq)
-                if len( codigo['id_funcionario']['ids_vazios'] ) == 0:
-                    id = codigo['id_funcionario']['novo_id']
-                    codigo['id_funcionario']['novo_id'] += 1
-                else:
-                    id = codigo['id_funcionario']['ids_vazios'][0]
-                    codigo['id_funcionario']['ids_vazios'].pop(0)
-
-                with open('banco_dados/ids.json', 'w') as arq:
-                    json.dump(codigo, arq, indent=4)
-                    return id
-        except:
-            return (False, 'Erro interno do sistema')
-    
-
-    @staticmethod
-    def gerar_id_admin() -> int:
-        try:
-            with open('banco_dados/ids.json', 'r') as arq:
-                codigo = json.load(arq)
-                if len( codigo['id_admin']['ids_vazios'] ) == 0:
-                    id = codigo['id_admin']['novo_id']
-                    codigo['id_admin']['novo_id'] += 1
-                else:
-                    id = codigo['id_admin']['ids_vazios'][0]
-                    codigo['id_admin']['ids_vazios'].pop(0)
-
-                with open('banco_dados/ids.json', 'w') as arq:
-                    json.dump(codigo, arq, indent=4)
-                    return id
-        except:
-            return (False, 'Erro interno do sistema')
     
 
     @staticmethod
@@ -745,21 +644,13 @@ class FuncionarioDal:
         try:
             FuncionarioDal.salvar_arquivo(codigo)
             
-            with open('banco_dados/ids.json', 'r') as arq:
-                codigo = json.load(arq)
-
-                if admin:
-                    codigo['id_admin']['ids_vazios'].append(id_funcionario)
-                    codigo['id_admin']['ids_vazios'].sort()
-                else:
-                    codigo['id_funcionario']['ids_vazios'].append(id_funcionario)
-                    codigo['id_funcionario']['ids_vazios'].sort()
-
-                with open('banco_dados/ids.json', 'w') as arq:
-                    json.dump(codigo, arq, indent=4)
-                    if admin:
-                        return (True, 'ADM removido com sucesso!')
-                    return (True, 'Funcionário removido com sucesso!')
+            if admin:
+                IdDal.remover_id('id_admin', id_funcionario)
+                return (True, 'ADM removido com sucesso!')
+            else:
+                IdDal.remover_id('id_funcionario', id_funcionario)
+                return (True, 'Funcionário removido com sucesso!')
+                    
         except:
             return (False, 'Não foi possível remover o funcionário!')
 
@@ -798,25 +689,6 @@ class ClienteDal:
                                        cliente['email']))
                 return(i, cliente)
         return False
-    
-
-    @staticmethod
-    def gerar_id() -> int:
-        try:
-            with open('banco_dados/ids.json', 'r') as arq:
-                codigo = json.load(arq)
-                if len( codigo['id_cliente']['ids_vazios'] ) == 0:
-                    id = codigo['id_cliente']['novo_id']
-                    codigo['id_cliente']['novo_id'] += 1
-                else:
-                    id = codigo['id_cliente']['ids_vazios'][0]
-                    codigo['id_cliente']['ids_vazios'].pop(0)
-
-                with open('banco_dados/ids.json', 'w') as arq:
-                    json.dump(codigo, arq, indent=4)
-                    return id
-        except:
-            return (False, 'Erro interno do sistema')
     
 
     @staticmethod
@@ -871,15 +743,9 @@ class ClienteDal:
 
         try:
             ClienteDal.salvar_arquivo(codigo)
-            
-            with open('banco_dados/ids.json', 'r') as arq:
-                codigo = json.load(arq)
-                codigo['id_cliente']['ids_vazios'].append(id_cliente)
-                codigo['id_cliente']['ids_vazios'].sort()
+            IdDal.remover_id('id_cliente', id_cliente)
 
-                with open('banco_dados/ids.json', 'w') as arq:
-                    json.dump(codigo, arq, indent=4)
-                    return (True, 'Cliente removido com sucesso!')
+            return (True, 'Cliente removido com sucesso!')
         except:
             return (False, 'Não foi possível remover o cliente!')
 
@@ -917,36 +783,17 @@ class VendaDal:
 									 v['preco_unitario']))
                 return (i, v)
         return False
-    
-    
-    @staticmethod
-    def gerar_id() -> int:
-        try:
-            with open('banco_dados/ids.json', 'r') as arq:
-                codigo = json.load(arq)
-                if len( codigo['id_venda']['ids_vazios'] ) == 0:
-                    id = codigo['id_venda']['novo_id']
-                    codigo['id_venda']['novo_id'] += 1
-                else:
-                    id = codigo['id_venda']['ids_vazios'][0]
-                    codigo['id_venda']['ids_vazios'].pop(0)
-
-                with open('banco_dados/ids.json', 'w') as arq:
-                    json.dump(codigo, arq, indent=4)
-                    return id
-        except:
-            return (False, 'Erro interno do sistema')
 
 
     @staticmethod
     def cadastrar_venda(venda: Venda, codigo: json) -> tuple:
         dado = {
-			"id_venda": venda.id_venda,
-			"id_cliente": venda.id_cliente,
-			"id_produto": venda.id_produto,
-			"quantidade": venda.quantidade,
+			"id_venda":       venda.id_venda,
+			"id_cliente":     venda.id_cliente,
+			"id_produto":     venda.id_produto,
+			"quantidade":     venda.quantidade,
 			"preco_unitario": venda.preco_unitario,
-			"preco_total": venda.preco_total
+			"preco_total":    venda.preco_total
 		}
 		
         codigo.append(dado)
@@ -964,11 +811,11 @@ class VendaDal:
         index, venda = VendaDal.ler_venda(id_venda, codigo, retorna_obj=False)
 
         alteracao = {
-			"id_cliente": kwargs.get('id_cliente'),
-			"id_produto": kwargs.get('id_produto'),
-			"quantidade": kwargs.get('quantidade'),
+			"id_cliente":     kwargs.get('id_cliente'),
+			"id_produto":     kwargs.get('id_produto'),
+			"quantidade":     kwargs.get('quantidade'),
 			"preco_unitario": kwargs.get('preco_unitario'),
-			"preco_total": kwargs.get('preco_total')
+			"preco_total":    kwargs.get('preco_total')
 		}
         for chave, valor in alteracao.items():
             if valor != None:
@@ -989,14 +836,8 @@ class VendaDal:
 
         try:
             VendaDal.salvar_arquivo(codigo)
-            
-            with open('banco_dados/ids.json', 'r') as arq:
-                codigo = json.load(arq)
-                codigo['id_venda']['ids_vazios'].append(id_venda)
-                codigo['id_venda']['ids_vazios'].sort()
+            IdDal.remover_id('id_venda', id_venda)
 
-                with open('banco_dados/ids.json', 'w') as arq:
-                    json.dump(codigo, arq, indent=4)
-                    return (True, 'Venda removida com sucesso!')
+            return (True, 'Venda removida com sucesso!')
         except:
             return (False, 'Não foi possível remover a venda!')
