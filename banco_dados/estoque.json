@@ -1,11 +1,6 @@
 [
     {
         "id": 0,
-        "categoria": "nenhuma",
-        "produtos": []
-    },
-    {
-        "id": 1,
         "categoria": "vencidos",
         "produtos": [
             {
@@ -27,6 +22,11 @@
                 "quantidade": 115
             }
         ]
+    },
+    {
+        "id": 1,
+        "categoria": "nenhuma",
+        "produtos": []
     },
     {
         "id": 2,

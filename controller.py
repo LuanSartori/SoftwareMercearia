@@ -1,10 +1,8 @@
 from operator import itemgetter
-import snoop
-import re
 import datetime
+
 from model import Categoria, Funcionario, Produto, Fornecedor, Lote, Cliente
 from dal import CategoriaDal, ClienteDal, EstoqueDal, FornecedorDal, FuncionarioDal, ClienteDal
-
 from utils import cnpj_valido, cpf_valido, email_valido, telefone_valido, senha_valida, validar_tempo, proximo_lote
 
 
@@ -20,7 +18,7 @@ class ServerError(Exception):
 
 class CategoriaController():
     @staticmethod
-    def cadastrar(categoria: str):
+    def cadastrar_categoria(categoria: str) -> tuple:
         codigo = CategoriaDal.ler_arquivo()
         codigo_estoque = EstoqueDal.ler_arquivo()
         if not codigo or not codigo_estoque:
@@ -34,11 +32,11 @@ class CategoriaController():
         
         id = CategoriaDal.gerar_id()
         categoria = Categoria(categoria, id)
-        return CategoriaDal.salvar(categoria, codigo, codigo_estoque)
+        return CategoriaDal.salvar_categoria(categoria, codigo, codigo_estoque)
 
 
     @staticmethod
-    def alterar(id_categoria: int, categoria: str):
+    def alterar_categoria(id_categoria: int, categoria: str) -> tuple:
         codigo = CategoriaDal.ler_arquivo()
         codigo_estoque = EstoqueDal.ler_arquivo()
         if not codigo or not codigo_estoque:
@@ -55,11 +53,11 @@ class CategoriaController():
 
 
         categoria = Categoria(categoria, id_categoria)
-        return CategoriaDal.alterar(id_categoria, categoria, i, codigo, codigo_estoque)
+        return CategoriaDal.alterar_categoria(id_categoria, categoria, i, codigo, codigo_estoque)
 
 
     @staticmethod
-    def remover(id_categoria: int):
+    def remover_categoria(id_categoria: int) -> tuple:
         codigo = CategoriaDal.ler_arquivo()
         codigo_estoque = EstoqueDal.ler_arquivo()
         if not codigo or not codigo_estoque:
@@ -71,8 +69,10 @@ class CategoriaController():
         
         if id_categoria == 0:
             raise ValueError(f'Não é possível remover a categoria "Nenhuma"')
+        elif id_categoria == 1:
+            raise ValueError(f'Não é possível remover a categoria: "vencidos')
 
-        return CategoriaDal.remover(id_categoria, index, codigo, codigo_estoque)
+        return CategoriaDal.remover_categoria(id_categoria, index, codigo, codigo_estoque)
 
 
 # --------------------------------------------------
@@ -81,7 +81,8 @@ class CategoriaController():
 
 class EstoqueController:
     @staticmethod
-    def cadastrar_produto(id_categoria: int, nome: str, marca: str, preco: float, validade: str, quantidade: int=None, id_fornecedor: int=None):
+    def cadastrar_produto(id_categoria: int, nome: str, marca: str, preco: float, validade: str,
+                          quantidade: int=None, id_fornecedor: int=None) -> tuple:
         codigo = CategoriaDal.ler_arquivo()
         codigo_estoque = EstoqueDal.ler_arquivo()
         if not codigo or not codigo_estoque:
@@ -92,7 +93,7 @@ class EstoqueController:
         elif not CategoriaDal.pesquisar_arquivo('id', id_categoria, codigo):
             raise IdError('Está categoria não existe!')
         
-        index = EstoqueDal.pesquisar_arquivo(codigo, produto.id_categoria)
+        index = EstoqueDal.pesquisar_categoria(codigo, produto.id_categoria)
         for p in codigo[index]['produtos']:
             if p['nome'] == nome:
                 raise ValueError('Já existe um produto com esse nome')
@@ -110,7 +111,7 @@ class EstoqueController:
 
 
     @staticmethod
-    def alterar_produto(id_produto:int, id_categoria_atual: int, **kwargs):
+    def alterar_produto(id_produto:int, id_categoria_atual: int, **kwargs) -> tuple:
         codigo = CategoriaDal.ler_arquivo()
         codigo_estoque = EstoqueDal.ler_arquivo()
         if not codigo or not codigo_estoque:
@@ -129,7 +130,7 @@ class EstoqueController:
 
 
     @staticmethod
-    def remover_produto(id_categoria: int, id_produto: int):
+    def remover_produto(id_categoria: int, id_produto: int) -> tuple:
         codigo = CategoriaDal.ler_arquivo()
         codigo_estoque = EstoqueDal.ler_arquivo()
         codigo_fornecedores = FornecedorDal.ler_arquivo()
@@ -151,12 +152,13 @@ class EstoqueController:
 
 
     @staticmethod
-    def verificar_validade():
+    def verificar_validade() -> tuple:
         codigo = EstoqueDal.ler_arquivo()
         if not codigo:
             raise ServerError('Não foi possível acessar o banco de dados!')
 
         data_hoje = datetime.datetime.now()
+        x = False
 
         for index_categoria, categoria in enumerate(codigo):
 
@@ -178,6 +180,8 @@ class EstoqueController:
                 # faz a verificacao dos produtos vencidos
                 for quantidade in produto['quantidade']:
                     if quantidade[0] <= data_hoje:
+                        x = True
+
                         quantidade[0] = datetime.datetime.strftime(quantidade[0], '%d/%m/%Y')
                         codigo = EstoqueDal.cadastrar_vencido(produto, quantidade, codigo)
 
@@ -188,16 +192,17 @@ class EstoqueController:
                     d = datetime.datetime.strftime(q[0], '%d/%m/%Y')
                     codigo[index_categoria]['produtos'][index_produto]['quantidade'][i][0] = d
         
-        return EstoqueDal.verificar_validade(codigo)
+        return EstoqueDal.verificar_validade(codigo, x)
 
 
     @staticmethod
-    def adicionar_quantidade(quantidade: list, id_produto: int, id_categoria: int, retorna_codigo=False):
+    def adicionar_quantidade(quantidade: list, id_produto: int,
+                             id_categoria: int, retorna_codigo=False) -> tuple:
         codigo = EstoqueDal.ler_arquivo()
         if not codigo:
             raise ServerError('Não foi possível acessar o banco de dados!')
 
-        index_categoria = EstoqueDal.pesquisar_arquivo(codigo, id_categoria)
+        index_categoria = EstoqueDal.pesquisar_categoria(codigo, id_categoria)
         index_produto, produto = EstoqueDal.ler_produto(id_categoria, id_produto, codigo, False)
         x = 0
 
@@ -224,9 +229,7 @@ class EstoqueController:
             d = datetime.datetime.strftime(q[0], '%d/%m/%Y')
             codigo[index_categoria]['produtos'][index_produto]['quantidade'][i][0] = d
 
-        if retorna_codigo:
-            return EstoqueDal.adicionar_quantidade(codigo, retorna_codigo=True)
-        return EstoqueDal.adicionar_quantidade(codigo)
+        return EstoqueDal.adicionar_quantidade(codigo, retorna_codigo)
 
 
 # --------------------------------------------------
@@ -235,7 +238,7 @@ class EstoqueController:
 
 class FornecedorController:
     @staticmethod
-    def cadastrar_fornecedor(nome: str, telefone: str, email: str, cnpj: str=None):
+    def cadastrar_fornecedor(nome: str, telefone: str, email: str, cnpj: str=None) -> tuple:
         codigo = FornecedorDal.ler_arquivo()
         if not codigo:
             raise ServerError('Não foi possível acessar o banco de dados!')
@@ -265,7 +268,7 @@ class FornecedorController:
     
 
     @staticmethod
-    def alterar_fornecedor(id_fornecedor, **kwargs):
+    def alterar_fornecedor(id_fornecedor, **kwargs) -> tuple:
         codigo = FornecedorDal.ler_arquivo()
         if not codigo:
             raise ServerError('Não foi possível acessar o banco de dados!')
@@ -294,7 +297,7 @@ class FornecedorController:
     
 
     @staticmethod
-    def remover_fornecedor(id_fornecedor: int):
+    def remover_fornecedor(id_fornecedor: int) -> tuple:
         codigo = FornecedorDal.ler_arquivo()
         if not codigo:
             raise ServerError('Não foi possível acessar o banco de dados!')
@@ -306,7 +309,8 @@ class FornecedorController:
     
 
     @staticmethod
-    def cadastrar_lote(id_fornecedor: int, preco_lote: float, id_categoria: int, id_produto: id, quantidade: int, tempo: dict=None):
+    def cadastrar_lote(id_fornecedor: int, preco_lote: float, id_categoria: int,
+                       id_produto: id, quantidade: int, tempo: dict=None) -> tuple:
         # Na view vai perguntar se o produto do lote já existe no sistema ou se ele quer criar um !!!
 
         codigo = FornecedorDal.ler_arquivo()
@@ -333,7 +337,7 @@ class FornecedorController:
     
     
     @staticmethod
-    def alterar_lote(id_fornecedor: int, id_lote: int, **kwargs):
+    def alterar_lote(id_fornecedor: int, id_lote: int, **kwargs) -> tuple:
         codigo = FornecedorDal.ler_arquivo()
         if not codigo:
             raise ServerError('Não foi possível acessar o banco de dados!')
@@ -355,7 +359,7 @@ class FornecedorController:
 
 
     @staticmethod
-    def remover_lote(id_fornecedor: int, id_lote: int):
+    def remover_lote(id_fornecedor: int, id_lote: int) -> tuple:
         codigo = FornecedorDal.ler_arquivo()
         if not codigo:
             raise ServerError('Não foi possível acessar o banco de dados!')
@@ -369,7 +373,7 @@ class FornecedorController:
     
 
     @staticmethod
-    def lote_recebido(id_fornecedor: int, id_lote: int, quantidade: list):
+    def lote_recebido(id_fornecedor: int, id_lote: int, quantidade: list) -> tuple:
         codigo_fornecedor = FornecedorDal.ler_arquivo()
         codigo_estoque = EstoqueDal.ler_arquivo()
         if not codigo_fornecedor or not codigo_estoque:
@@ -398,7 +402,8 @@ class FornecedorController:
 
 class FuncionarioController:
     @staticmethod
-    def cadastrar_funcionario(nome: str, telefone: str, email: str, cpf: str, cargo: str, senha: str, admin=False, posicao=None):
+    def cadastrar_funcionario(nome: str, telefone: str, email: str, cpf: str,
+                              cargo: str, senha: str, admin=False, posicao=None) -> tuple:
         codigo = FuncionarioDal.ler_arquivo()
         if not codigo:
             raise ServerError('Não foi possível acessar o banco de dados!')
@@ -443,7 +448,7 @@ class FuncionarioController:
 
 
     @staticmethod
-    def alterar_funcionario(id_funcionario, admin=False, posicao=None, **kwargs):
+    def alterar_funcionario(id_funcionario, admin=False, posicao=None, **kwargs) -> tuple:
         codigo = FuncionarioDal.ler_arquivo()
         if not codigo:
             raise ServerError('Não foi possível acessar o banco de dados!')
@@ -486,7 +491,7 @@ class FuncionarioController:
 
     
     @staticmethod
-    def remover_funcionario(id_funcionario: int, admin=False):
+    def remover_funcionario(id_funcionario: int, admin=False) -> tuple:
         codigo = FuncionarioDal.ler_arquivo()
         if not codigo:
             raise ServerError('Não foi possível acessar o banco de dados!')
@@ -510,7 +515,7 @@ class FuncionarioController:
 
 class ClienteController:
     @staticmethod
-    def cadastrar_cliente(nome: str, cpf: str, senha: str, telefone: str=None, email: str=None):
+    def cadastrar_cliente(nome: str, cpf: str, senha: str, telefone: str=None, email: str=None) -> tuple:
         codigo = ClienteDal.ler_arquivo()
         if not codigo:
             raise ServerError('Não foi possível acessar o banco de dados!')
@@ -545,7 +550,7 @@ class ClienteController:
 
 
     @staticmethod
-    def alterar_cliente(id_cliente: int, **kwargs):
+    def alterar_cliente(id_cliente: int, **kwargs) -> tuple:
         codigo = ClienteDal.ler_arquivo()
         if not codigo:
             raise ServerError('Não foi possível acessar o banco de dados!')
@@ -579,7 +584,7 @@ class ClienteController:
     
 
     @staticmethod
-    def remover_cliente(id_cliente: int):
+    def remover_cliente(id_cliente: int) -> tuple:
         codigo = ClienteDal.ler_arquivo()
         if not codigo:
             raise ServerError('Não foi possível acessar o banco de dados!')

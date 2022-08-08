@@ -5,9 +5,7 @@
     },
     "id_produto": {
         "novo_id": 1,
-        "ids_vazios": [
-            0
-        ]
+        "ids_vazios": []
     },
     "id_fornecedor": {
         "novo_id": 2,
