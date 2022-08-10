@@ -1,9 +1,7 @@
 import json
 from operator import itemgetter
 
-from controller import EstoqueController
 from model import Categoria, Funcionario, Produto, Fornecedor, Lote, Cliente, Venda
-from utils import proximo_lote
 
 class IdDal:
     @staticmethod
@@ -303,19 +301,7 @@ class EstoqueDal:
             EstoqueDal.salvar_arquivo(bool)
             return (True, 'Produtos vencidos removidos com sucesso!')
         except:
-            return (False, 'Não foi possível remover os produtos vencidos!')         
-
-
-    @staticmethod
-    def adicionar_quantidade(codigo: json, retorna_codigo=False) -> tuple:
-        if retorna_codigo:
-            return codigo
-        
-        try:
-            EstoqueDal.salvar_arquivo(codigo)
-            return (True, 'Produtos adicionados com sucesso!')
-        except:
-            return (False, 'Não foi possível adicionar os produtos!')
+            return (False, 'Não foi possível remover os produtos vencidos!')
 
 
 # --------------------------------------------------
@@ -501,14 +487,7 @@ class FornecedorDal:
     
 
     @staticmethod
-    def lote_recebido(id_fornecedor: int, id_lote: int, quantidade: list,
-                      codigo_fornecedor: json, codigo_estoque: json) -> tuple:
-        index_f, fornecedor = FornecedorDal.ler_fornecedor(codigo_fornecedor, id_fornecedor, False)
-        index_l, lote = FornecedorDal.ler_lote(id_fornecedor, codigo_fornecedor, id_lote, False)
-
-        codigo_fornecedor[index_f]['lotes'][index_l]['tempo'] = proximo_lote(lote['tempo'])
-        codigo_estoque = EstoqueController.adicionar_quantidade(quantidade, lote['id_produto'], lote['id_categoria'], retorna_codigo=True)
-
+    def lote_recebido(codigo_fornecedor: json, codigo_estoque: json) -> tuple:
         try:
             FornecedorDal.salvar_arquivo(codigo_fornecedor)
             EstoqueDal.salvar_arquivo(codigo_estoque)

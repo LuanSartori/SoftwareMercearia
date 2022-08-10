@@ -199,8 +199,7 @@ class EstoqueController:
 
 
     @staticmethod
-    def adicionar_quantidade(quantidade: list, id_produto: int,
-                             id_categoria: int, retorna_codigo=False) -> tuple:
+    def adicionar_quantidade(quantidade: list, id_produto: int, id_categoria: int) -> tuple:
         codigo = EstoqueDal.ler_arquivo()
         if not codigo:
             raise ServerError('Não foi possível acessar o banco de dados!')
@@ -232,7 +231,7 @@ class EstoqueController:
             d = datetime.datetime.strftime(q[0], '%d/%m/%Y')
             codigo[index_categoria]['produtos'][index_produto]['quantidade'][i][0] = d
 
-        return EstoqueDal.adicionar_quantidade(codigo, retorna_codigo)
+        return codigo
 
 
 # --------------------------------------------------
@@ -396,7 +395,13 @@ class FornecedorController:
         except:
             raise ValueError('Quantidade inválida!')
         
-        return FornecedorDal.lote_recebido(id_fornecedor, id_lote, quantidade, codigo_fornecedor, codigo_estoque)
+        index_f, fornecedor = FornecedorDal.ler_fornecedor(codigo_fornecedor, id_fornecedor, False)
+        index_l, lote = FornecedorDal.ler_lote(id_fornecedor, codigo_fornecedor, id_lote, False)
+
+        codigo_fornecedor[index_f]['lotes'][index_l]['tempo'] = proximo_lote(lote['tempo'])
+        codigo_estoque = EstoqueController.adicionar_quantidade(quantidade, lote['id_produto'], lote['id_categoria'])
+
+        return FornecedorDal.lote_recebido(codigo_fornecedor, codigo_estoque)
 
 
 # --------------------------------------------------
