@@ -1,6 +1,7 @@
 from itertools import cycle
 import re
 import datetime
+import bcrypt
 
 
 def telefone_valido(telefone):
@@ -71,6 +72,18 @@ def senha_valida(senha: str):
         return (False, 'A senha não deve ter espaços vazios!')
     else:
         return True
+
+
+def hash_senha(senha: str, decode=False): 
+    pwd_bytes = senha.encode("utf-8") 
+    salt = bcrypt.gensalt()
+    if decode:
+        return bcrypt.hashpw(pwd_bytes, salt).decode('utf-8') 
+    return bcrypt.hashpw(pwd_bytes, salt)
+
+
+def comparar_senha(senha_1: str, senha_2: str) -> bool:
+    return bcrypt.checkpw(senha_1, senha_2)
 
 
 def validar_tempo(tempo: dict):

@@ -3,7 +3,7 @@ import datetime
 
 from model import Categoria, Funcionario, Produto, Fornecedor, Lote, Cliente
 from dal import IdDal, CategoriaDal, ClienteDal, EstoqueDal, FornecedorDal, FuncionarioDal, ClienteDal
-from utils import cnpj_valido, cpf_valido, email_valido, telefone_valido, senha_valida, validar_tempo, proximo_lote
+from utils import *
 
 
 class IdError(Exception):
@@ -442,6 +442,8 @@ class FuncionarioController:
             id = IdDal.gerar_id('id_admin')
         else:
             id = IdDal.gerar_id('id_funcionario')
+        
+        senha = hash_senha(senha, decode=True)
 
         funcionario = Funcionario(id, nome, cpf, cargo, senha, telefone, email)
         if admin:
@@ -469,6 +471,8 @@ class FuncionarioController:
             valida_senha = senha_valida(kwargs.get('senha'))
             if valida_senha != True:
                 raise ValueError(valida_senha)
+            
+            kwargs['senha'] = hash_senha(kwargs.get('senha'), decode=True)
         
         if kwargs.get('nome') != None:
             if (not kwargs.get('nome')) or 5 > len(kwargs.get('nome')) > 50:
@@ -547,6 +551,8 @@ class ClienteController:
         if not cpf_valido:
             raise ValueError('CPF inválido!')
         
+        senha = hash_senha(senha, decode=True)
+        
         id = IdDal.gerar_id('id_cliente')
         cliente = Cliente(nome, cpf, id, senha, telefone, email)
         return ClienteDal.cadastrar_cliente(cliente, codigo)
@@ -565,6 +571,8 @@ class ClienteController:
             valida_senha = senha_valida(kwargs.get('senha'))
             if valida_senha != True:
                 raise ValueError(valida_senha)
+            
+            kwargs['senha'] = hash_senha(kwargs.get('senha'), decode=True)
         
         if kwargs.get('nome') != None:
             if (not kwargs.get('nome')) or 5 > len(kwargs.get('nome')) > 50:
