@@ -66,3 +66,19 @@ class Venda:
         self.quantidade = quantidade
         self.preco_unitario = preco_unitario
         self.preco_total = preco_unitario * quantidade
+
+
+class LoginFuncionario:
+    def __init__(self, id_funcionario: int, cpf: str, nome: str):
+        self.id_funcionario = id_funcionario
+        self.cpf = cpf
+        self.nome = nome
+
+
+class LoginCliente:
+    def __init__(self, id_cliente: int, cpf: str, nome: str, telefone: str = None, email: str = None):
+        self.id_cliente = id_cliente
+        self.cpf = cpf
+        self.nome = nome
+        self.telefone = telefone
+        self.email = email

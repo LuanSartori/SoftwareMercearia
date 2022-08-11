@@ -1,7 +1,7 @@
 from operator import itemgetter
 import datetime
 
-from model import Categoria, Funcionario, Produto, Fornecedor, Lote, Cliente
+from model import Categoria, Produto, Fornecedor, Lote, Funcionario, LoginFuncionario, Cliente, LoginCliente
 from dal import IdDal, CategoriaDal, ClienteDal, EstoqueDal, FornecedorDal, FuncionarioDal, ClienteDal
 from utils import *
 
@@ -613,3 +613,49 @@ class ClienteController:
 
 # --------------------------------------------------
 # --------------------------------------------------
+
+
+class Login:
+    @staticmethod
+    def logar_funcionario(nome: str, senha: str, admin=False) -> LoginFuncionario:
+        codigo = FuncionarioDal.ler_arquivo()
+
+        if admin:
+            for i, f in enumerate(codigo['admins']):
+                if f['nome'] == nome:
+                    senha_2 = f['senha'].encode('utf-8')
+                    break
+            else:
+                raise ValueError('Nao existe um ADM com este nome!')
+        else:
+            for i, f in enumerate(codigo['funcionarios']):
+                if f['nome'] == nome:
+                    senha_2 = f['senha'].encode('utf-8')
+                    break
+            else:
+                raise ValueError('Nao existe um funcionário com este nome!')
+        
+        senha = senha.encode('utf-8')
+        if not comparar_senha(senha, senha_2):
+            raise ValueError('Senha incorreta!')
+        
+        return LoginFuncionario(f['id'], f['cpf'], f['nome'])
+    
+
+    @staticmethod
+    def logar_cliente(nome: str, senha: str) -> LoginCliente:
+        codigo = ClienteDal.ler_arquivo()
+
+        for i, c in enumerate(codigo):
+            if c['nome'] == nome:
+                senha_2 = c['senha'].encode('utf-8')
+                break
+        else:
+            raise ValueError('Não existe um usuário com este nome!')
+        
+        senha = senha.encode('utf-8')
+        if not comparar_senha(senha, senha_2):
+            raise ValueError('Senha incorreta!')
+        
+        return LoginCliente(c['id'], c['cpf'], c['nome'], c['telefone'], c['email'])
+
