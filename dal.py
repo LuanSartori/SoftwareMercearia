@@ -3,6 +3,7 @@ from operator import itemgetter
 
 from model import Categoria, Funcionario, Produto, Fornecedor, Lote, Cliente, Venda
 
+
 class IdDal:
     @staticmethod
     def gerar_id(chave: str) -> int:
@@ -820,3 +821,81 @@ class VendaDal:
             return (True, 'Venda removida com sucesso!')
         except:
             return (False, 'Não foi possível remover a venda!')
+
+
+# --------------------------------------------------
+# --------------------------------------------------
+
+
+class CaixaDal:
+    @staticmethod
+    def ler_arquivo() -> json:
+        try:
+            with open('banco_dados/caixas.json', 'r') as arq:
+                return json.load(arq)
+        except:
+            return False
+	
+
+    @staticmethod
+    def salvar_arquivo(codigo: json):
+        with open('banco_dados/caixas.json', 'w') as arq:
+            json.dump(codigo, arq, indent=4)
+    
+
+    @staticmethod
+    def ler_caixa(numero_caixa: int, codigo: json):
+        for i, c in enumerate(codigo):
+            if c['numero_caixa'] == numero_caixa:
+                return (i, c)
+        return False
+
+
+    @staticmethod
+    def cadastrar_caixa(numero_caixa: int, valor_no_caixa: float):
+        dado = {
+            "numero_caixa":   numero_caixa,
+            "valor_no_caixa": valor_no_caixa
+        }
+        try:
+            CaixaDal.salvar_arquivo(dado)
+            return (True, 'Caixa cadastrado com sucesso!')
+        except:
+            return (False, 'Não foi possível cadastrar o caixa!')
+    
+
+    @staticmethod
+    def alterar_caixa(numero_caixa: int, codigo: json, **kwargs):
+        index, caixa = CaixaDal.ler_caixa(numero_caixa, codigo)
+
+        alteracao = {
+			"numero_caixa":   kwargs.get('numero_caixa'),
+			"valor_no_caixa": kwargs.get('valor_no_caixa')
+		}
+        for chave, valor in alteracao.items():
+            if valor != None:
+                caixa[chave] = valor
+        
+        codigo[index] = caixa
+        try:
+            CaixaDal.salvar_arquivo(codigo)
+            return (True, 'Caixa alterado com sucesso!')
+        except:
+            return (False, 'Não foi possível alterar o caixa!')
+
+
+    @staticmethod
+    def remover_caixa(numero_caixa: int, codigo: json):
+        index, caixa = CaixaDal.ler_caixa(numero_caixa, codigo)
+        codigo.pop(index)
+
+        try:
+            CaixaDal.salvar_arquivo(codigo)
+
+            return (True, 'Caixa removido com sucesso!')
+        except:
+            return (False, 'Não foi possível remover o caixa!')
+
+
+# --------------------------------------------------
+# --------------------------------------------------

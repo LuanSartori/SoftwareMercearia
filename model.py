@@ -82,3 +82,11 @@ class LoginCliente:
         self.nome = nome
         self.telefone = telefone
         self.email = email
+
+
+class Caixa:
+    def __init__(self, numero_caixa: int, valor_no_caixa: float, id_funcionario: int, nome_funcionario: str):
+        self.numero_caixa = numero_caixa
+        self.valor_no_caixa = valor_no_caixa
+        self.id_funcionario = id_funcionario
+        self.nome_funcionario = nome_funcionario

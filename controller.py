@@ -1,8 +1,8 @@
 from operator import itemgetter
 import datetime
 
-from model import Categoria, Produto, Fornecedor, Lote, Funcionario, LoginFuncionario, Cliente, LoginCliente
-from dal import IdDal, CategoriaDal, ClienteDal, EstoqueDal, FornecedorDal, FuncionarioDal, ClienteDal
+from model import *
+from dal import *
 from utils import *
 
 
@@ -659,3 +659,86 @@ class Login:
         
         return LoginCliente(c['id'], c['cpf'], c['nome'], c['telefone'], c['email'])
 
+
+# --------------------------------------------------
+# --------------------------------------------------
+
+
+class CaixaController:
+    @staticmethod
+    def cadastrar_caixa(numero_caixa: int, valor_no_caixa: float) -> tuple:
+        codigo = CaixaDal.ler_arquivo()
+
+        for i, c in codigo:
+            if not c['numero_caixa'] == numero_caixa:
+                break
+        else:
+            raise ValueError('Já existe um caixa com este número!')
+        
+        if not valor_no_caixa.isnumeric():
+            raise ValueError('O valor no caixa deve ser um número!')
+        if valor_no_caixa < 0:
+            raise ValueError('O valor no caixa não pode ser negativo!')
+        
+        return CaixaDal.cadastrar_caixa(numero_caixa, valor_no_caixa)
+    
+
+    @staticmethod
+    def alterar_caixa(numero_caixa: int, **kwargs) -> tuple:
+        codigo = CaixaDal.ler_arquivo()
+        if not codigo:
+            raise ServerError('Não é possível acessar o servidor!')
+        
+        if kwargs.get('numero_caixa') != None:
+            for i, c in codigo:
+                if c['numero_caixa'] == numero_caixa:
+                    break
+            else:
+                raise ValueError('Já existe um caixa com este número!')
+        
+        if kwargs.get('valor_no_caixa') != None:
+            if kwargs.get('valor_no_caixa') < 0:
+                raise ValueError('O valor no caixa não pode ser negativo!')
+        
+        return CaixaDal.alterar_caixa(numero_caixa, codigo, **kwargs)
+
+
+    @staticmethod
+    def remover_caixa(numero_caixa: int) -> tuple:
+        codigo = CaixaDal.ler_arquivo()
+        if not codigo:
+            raise ServerError('Não foi possível acessar o banco de dados!')
+        
+        caixa = CaixaDal.ler_caixa(numero_caixa, codigo)
+        if not caixa:
+            raise IdError('Não existe uma caixa com esse número!')
+        if caixa[1]['valor_no_caixa'] > 0:
+            raise Exception('Você não pode remover um caixa com dinheiro dentro!')
+        
+        return CaixaDal.remover_caixa(numero_caixa, codigo)
+    
+
+    @staticmethod
+    def definir_caixa(numero_caixa: int, login: LoginFuncionario, admin: False) -> Caixa:
+        codigo_caixa = CaixaDal.ler_arquivo()
+        codigo_funcionario = FuncionarioDal.ler_arquivo()
+
+        if admin:
+            for i, f in enumerate(codigo_funcionario['admins']):
+                if f['id'] == login.id_funcionario:
+                    break
+            else:
+                raise ValueError('Não existe um funcionário com este ID')
+        else:
+            for i, f in enumerate(codigo_funcionario['funcionarios']):
+                if f['id'] == login.id_funcionario:
+                    break
+            else:
+                raise ValueError('Não existe um funcionário com este ID')
+        
+        index, caixa = CaixaDal.ler_caixa(numero_caixa, codigo_caixa)
+        return Caixa(caixa['numero_caixa'], caixa['valor_no_caixa'], f['id'], f['nome'])
+
+
+# --------------------------------------------------
+# --------------------------------------------------
