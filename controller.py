@@ -34,6 +34,8 @@ class CategoriaController():
         
         
         id = IdDal.gerar_id('id_categoria')
+        if not id:
+            raise ServerError('Não foi possível acessar o banco de dados!')
         categoria = Categoria(categoria, id)
         return CategoriaDal.salvar_categoria(categoria, codigo, codigo_estoque)
 
@@ -109,6 +111,9 @@ class EstoqueController:
             raise ValueError('Data de validade inválida!', arg)
 
         id = IdDal.gerar_id('id_produto')
+        if not id:
+            raise ServerError('Não foi possível acessar o banco de dados!')
+            
         produto = Produto(id, id_categoria, nome, marca, preco, validade, quantidade, id_fornecedor)
         return EstoqueDal.cadastrar_produto(produto, codigo_estoque)
 
@@ -265,6 +270,9 @@ class FornecedorController:
             raise ValueError('CNPJ inválido!')
         
         id = IdDal.gerar_id('id_fornecedor')
+        if not id:
+            raise ServerError('Não foi possível acessar o banco de dados!')
+
         fornecedor = Fornecedor(id, nome, telefone, email, cnpj)
         return FornecedorDal.cadastrar_fornecedor(fornecedor, codigo)
     
@@ -334,6 +342,9 @@ class FornecedorController:
 
         
         id = IdDal.gerar_id('id_lote')
+        if not id:
+            raise ServerError('Não foi possível acessar o banco de dados!')
+
         lote = Lote(id, preco_lote, id_produto, id_categoria, quantidade, tempo)
         return FornecedorDal.cadastrar_lote(id_fornecedor, lote, codigo)
     
@@ -448,6 +459,9 @@ class FuncionarioController:
         else:
             id = IdDal.gerar_id('id_funcionario')
         
+        if not id:
+            raise ServerError('Não foi possível acessar o banco de dados!')
+        
         senha = hash_senha(senha, decode=True)
 
         funcionario = Funcionario(id, nome, cpf, cargo, senha, telefone, email)
@@ -559,6 +573,9 @@ class ClienteController:
         senha = hash_senha(senha, decode=True)
         
         id = IdDal.gerar_id('id_cliente')
+        if not id:
+            raise ServerError('Não foi possível acessar o banco de dados!')
+
         cliente = Cliente(nome, cpf, id, senha, telefone, email)
         return ClienteDal.cadastrar_cliente(cliente, codigo)
 

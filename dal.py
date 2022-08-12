@@ -21,7 +21,7 @@ class IdDal:
                     json.dump(codigo, arq, indent=4)
                     return id_gerado
         except:
-            return (False, 'Erro interno do sistema')
+            return False
 
 
     @staticmethod
@@ -33,6 +33,10 @@ class IdDal:
 
             with open('banco_dados/ids.json', 'w') as arq:
                 json.dump(codigo, arq, indent=4)
+
+
+# --------------------------------------------------
+# --------------------------------------------------
 
 
 class CategoriaDal:
