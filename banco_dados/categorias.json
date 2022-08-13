@@ -1,10 +1,14 @@
 [
     {
         "id": 0,
-        "categoria": "nenhuma"
+        "categoria": "vencidos"
     },
     {
         "id": 1,
+        "categoria": "nenhuma"
+    },
+    {
+        "id": 2,
         "categoria": "frutas"
     }
 ]

@@ -125,7 +125,7 @@ class EstoqueController:
         if not codigo or not codigo_estoque:
             raise ServerError('Não foi possível acessar o banco de dados!')
 
-        if not EstoqueDal.ler_produto(id_categoria_atual, id_produto, codigo_estoque, True):
+        if not EstoqueDal.ler_produto_por_categoria(id_categoria_atual, id_produto, codigo_estoque, True):
             raise IdError('Não existe uma produto com esse ID', id_produto)
         if not CategoriaDal.pesquisar_arquivo('id', str(id_categoria_atual), codigo):
             raise IdError('Não existe uma categoria com esse ID', id_categoria_atual)
@@ -145,7 +145,7 @@ class EstoqueController:
         if not codigo or not codigo_estoque or not codigo_fornecedores:
             raise ServerError('Não foi possível acessar o banco de dados!')
         
-        if not EstoqueDal.ler_produto(id_categoria, id_produto, codigo_estoque, True):
+        if not EstoqueDal.ler_produto_por_categoria(id_categoria, id_produto, codigo_estoque, True):
             raise IdError('Não existe uma produto com esse ID', id_produto)
         if not CategoriaDal.pesquisar_arquivo('id', str(id_categoria), codigo):
             raise IdError('Não existe uma categoria com esse ID', id_categoria)
@@ -204,23 +204,17 @@ class EstoqueController:
 
 
     @staticmethod
-    def adicionar_quantidade(quantidade: list, id_produto: int, id_categoria: int) -> tuple:
-        codigo = EstoqueDal.ler_arquivo()
-        if not codigo:
-            raise ServerError('Não foi possível acessar o banco de dados!')
-
+    def adicionar_quantidade(id_categoria: int, id_produto: int, quantidade: list, codigo: json) -> json:
         index_categoria = EstoqueDal.pesquisar_categoria(codigo, id_categoria)
-        index_produto, produto = EstoqueDal.ler_produto(id_categoria, id_produto, codigo, False)
-        x = 0
+        index_produto, produto = EstoqueDal.ler_produto_por_categoria(id_categoria, id_produto, codigo, retorna_obj=False)
 
         for v in quantidade:
             for i, q in enumerate(codigo[index_categoria]['produtos'][index_produto]['quantidade']):
                 if v[0] == q[0]:
                     codigo[index_categoria]['produtos'][index_produto]['quantidade'][i][1] += v[1]
-                    x = 1
-            if x == 0:
+                    break
+            else:
                 codigo[index_categoria]['produtos'][index_produto]['quantidade'].append(v)
-            x = 0
 
         # transforma todas as datas em objetos datetime e os ordena
         for i, q in enumerate(produto['quantidade']):
@@ -239,6 +233,31 @@ class EstoqueController:
         return codigo
 
 
+    @staticmethod
+    def remover_quantidade(id_categoria: int, id_produto: int, quantidade: int, codigo: json) -> json:
+        index_categoria = EstoqueDal.pesquisar_categoria(codigo, id_categoria)
+        index_produto, produto = EstoqueDal.ler_produto_por_categoria(id_categoria, id_produto, codigo, False)
+
+        if contar_quantidade(produto) < quantidade:
+            raise ValueError('Faltam produtos no estoque!')
+
+        pop_list = []
+        for i, q in enumerate(codigo[index_categoria]['produtos'][index_produto]['quantidade']):
+            if q[1] > quantidade:
+                codigo[index_categoria]['produtos'][index_produto]['quantidade'][i][1] -= quantidade
+                break
+            if q[1] == quantidade:
+                pop_list.append(i)
+                break
+            if q[1] < quantidade:
+                quantidade -= q[1]
+                pop_list.append(i)
+        
+        pop_list.sort(reverse=True)
+        for p in pop_list:
+            codigo[index_categoria]['produtos'][index_produto]['quantidade'].pop(p)
+        
+        return codigo
 # --------------------------------------------------
 # --------------------------------------------------
 
@@ -331,7 +350,7 @@ class FornecedorController:
         if not FornecedorDal.ler_fornecedor(codigo, id_fornecedor):
             raise IdError('Não existe um fornecedor com este ID', id_fornecedor)
         
-        if not EstoqueDal.ler_produto(id_categoria, id_produto, codigo_estoque):
+        if not EstoqueDal.ler_produto_por_categoria(id_categoria, id_produto, codigo_estoque):
             raise IdError('Não existe um produto com este ID', id_produto)
 
         if tempo != None:
@@ -365,7 +384,7 @@ class FornecedorController:
             if not codigo_estoque:
                 raise ServerError('Não foi possível acessar o banco de dados!')
             
-            if not EstoqueDal.ler_produto(kwargs.get('id_categoria'), kwargs.get('id_produto'), codigo_estoque):
+            if not EstoqueDal.ler_produto_por_categoria(kwargs.get('id_categoria'), kwargs.get('id_produto'), codigo_estoque):
                 raise IdError('Não existe um produto com este ID', kwargs.get('id_produto'))
         
         return FornecedorDal.alterar_lote(id_fornecedor, id_lote, codigo, **kwargs)
@@ -410,7 +429,7 @@ class FornecedorController:
         index_l, lote = FornecedorDal.ler_lote(id_fornecedor, codigo_fornecedor, id_lote, False)
 
         codigo_fornecedor[index_f]['lotes'][index_l]['tempo'] = proximo_lote(lote['tempo'])
-        codigo_estoque = EstoqueController.adicionar_quantidade(quantidade, lote['id_produto'], lote['id_categoria'])
+        codigo_estoque = EstoqueController.adicionar_quantidade(lote['id_categoria'], lote['id_produto'], quantidade, codigo_estoque)
 
         return FornecedorDal.lote_recebido(codigo_fornecedor, codigo_estoque)
 
@@ -451,7 +470,7 @@ class FuncionarioController:
             if f['cpf'] == cpf:
                 raise ValueError('Já existe um ADM cadastrado com este CPF!')
 
-        if not cpf_valido:
+        if not cpf_valido(cpf):
             raise ValueError('CPF inválido!')
         
         if admin:
@@ -567,7 +586,7 @@ class ClienteController:
             if c['cpf'] == cpf:
                 raise ValueError('Já existe um cliente cadastrado com este CPF!')
 
-        if not cpf_valido:
+        if not cpf_valido(cpf):
             raise ValueError('CPF inválido!')
         
         senha = hash_senha(senha, decode=True)
@@ -685,11 +704,10 @@ class CaixaController:
     @staticmethod
     def cadastrar_caixa(numero_caixa: int, valor_no_caixa: float) -> tuple:
         codigo = CaixaDal.ler_arquivo()
+        if not codigo:
+            raise ServerError('Não foi possível acessar o banco de dados!')
 
-        for i, c in codigo:
-            if not c['numero_caixa'] == numero_caixa:
-                break
-        else:
+        if CaixaDal.ler_caixa(numero_caixa, codigo):
             raise ValueError('Já existe um caixa com este número!')
         
         if not valor_no_caixa.isnumeric():
@@ -706,11 +724,11 @@ class CaixaController:
         if not codigo:
             raise ServerError('Não é possível acessar o servidor!')
         
+        if not CaixaDal.ler_caixa(numero_caixa, codigo):
+            raise ValueError('Não existe um caixa com esse número!')
+        
         if kwargs.get('numero_caixa') != None:
-            for i, c in codigo:
-                if c['numero_caixa'] == numero_caixa:
-                    break
-            else:
+            if CaixaDal.ler_caixa(numero_caixa, codigo):
                 raise ValueError('Já existe um caixa com este número!')
         
         if kwargs.get('valor_no_caixa') != None:
@@ -739,6 +757,11 @@ class CaixaController:
     def definir_caixa(numero_caixa: int, login: LoginFuncionario, admin: False) -> Caixa:
         codigo_caixa = CaixaDal.ler_arquivo()
         codigo_funcionario = FuncionarioDal.ler_arquivo()
+        if not codigo_caixa or not codigo_funcionario:
+            raise ServerError('Não foi possível acessar o banco de dados!')
+        
+        if not CaixaDal.ler_caixa(numero_caixa, codigo_caixa):
+            raise ValueError('Não existe um caixa com esse número!')
 
         if admin:
             for i, f in enumerate(codigo_funcionario['admins']):
@@ -755,6 +778,130 @@ class CaixaController:
         
         index, caixa = CaixaDal.ler_caixa(numero_caixa, codigo_caixa)
         return Caixa(caixa['numero_caixa'], caixa['valor_no_caixa'], f['id'], f['nome'])
+
+
+    @staticmethod
+    def passar_produto(id_produto: int, quantidade: int) -> ProdutoNoCarrinho:
+        codigo_caixa = CaixaDal.ler_arquivo()
+        codigo_estoque = EstoqueDal.ler_arquivo()
+        if not codigo_caixa or not codigo_estoque:
+            raise ServerError('Não foi possível acessar o banco de dados!')
+        
+        produto = EstoqueDal.ler_produto_por_id(id_produto, codigo_estoque, retorna_obj=False)
+        if not produto:
+            raise IdError('Não existe um produto com este ID!')
+        index_categoria, index_produto, produto = produto
+        
+        qnt = contar_quantidade(produto)
+        if qnt < quantidade:
+            raise ValueError('Não temos está quantidade de produtos!')
+        
+        preco_total = qnt * produto['preco']        
+        return ProdutoNoCarrinho(codigo_estoque[index_categoria]['id'],
+                                 codigo_estoque[index_categoria]['categoria'],
+                                 produto['id'], produto['nome'], quantidade, produto['preco'], preco_total)
+
+
+# --------------------------------------------------
+# --------------------------------------------------
+
+
+class VendaController:
+    @staticmethod
+    def retirar_do_estoque(carrinho: Carrinho):
+        codigo_estoque = EstoqueDal.ler_arquivo()
+        if not codigo_estoque:
+            raise ServerError('Não foi possível acessar o banco de dados!')
+        
+        for i, p in enumerate(carrinho.produtos):
+            codigo_estoque = EstoqueController.remover_quantidade(p.id_categoria, p.id_produto, 
+                                                                  p.quantidade, codigo_estoque)
+        
+        EstoqueDal.salvar_arquivo(codigo_estoque)
+
+
+    @staticmethod
+    def venda(login: LoginFuncionario, numero_caixa: int, carrinho: Carrinho,
+              valor_recebido: float, cpf_cliente=None) -> bool:
+        codigo_caixa = CaixaDal.ler_arquivo()
+        codigo_estoque = EstoqueDal.ler_arquivo()
+        codigo_venda = VendaDal.ler_arquivo()
+        if not codigo_caixa or not codigo_estoque or not codigo_venda:
+            raise ServerError('Não foi possível acessar o banco de dados!')
+        
+        caixa = CaixaDal.ler_caixa(numero_caixa, codigo_caixa)
+        if not caixa:
+            raise ValueError('Não existe um caixa com esse número!')
+        index, caixa = caixa
+
+        if cpf_cliente != None:
+            if not cpf_valido(cpf_cliente):
+                raise ValueError('CPF inválido!')
+        
+        if valor_recebido < carrinho.preco_total:
+            raise ValueError('Dinheiro insuficiente!')
+        
+        troco = valor_recebido - carrinho.preco_total
+        if troco > caixa['valor_no_caixa']:
+            raise ValueError('Caixa sem troco!')
+        
+        valor_no_caixa = caixa['valor_no_caixa'] + carrinho.preco_total
+        CaixaDal.alterar_caixa(numero_caixa, codigo_caixa, valor_no_caixa=valor_no_caixa)
+
+        produtos = []
+        for i, p in enumerate(carrinho.produtos):
+            produtos.append({
+                'id_categoria':   p.id_categoria,
+                'nome_categoria': p.nome_categoria,
+                'id_produto':     p.id_produto,
+                'nome_produto':   p.nome_produto,
+                'quantidade':     p.quantidade,
+                'preco_unidade':  p.preco_unidade,
+                'preco_total':    p.preco_total
+            })
+        
+        VendaController.retirar_do_estoque(carrinho)
+
+        id = IdDal.gerar_id('id_venda')
+        if not id:
+            raise ServerError('Não foi possível acessar o banco de dados!')
+
+        venda = Venda(id, login.id_funcionario, carrinho, cpf_cliente=cpf_cliente, lista_produtos=produtos)
+        return (VendaDal.cadastrar_venda(venda, codigo_venda, online=False), troco)
+    
+
+    @staticmethod
+    def venda_online(login: LoginCliente, carrinho: Carrinho, valor_recebido: float) -> tuple:
+        codigo_estoque = EstoqueDal.ler_arquivo()
+        codigo_venda = VendaDal.ler_arquivo()
+        if not codigo_estoque or not codigo_venda:
+            raise ServerError('Não foi possível acessar o banco de dados!')
+
+        if valor_recebido < carrinho.preco_total:
+            raise ValueError('Dinheiro insuficiente!')
+        
+        troco = valor_recebido - carrinho.preco_total
+        
+        produtos = []
+        for i, p in enumerate(carrinho.produtos):
+            produtos.append({
+                'id_categoria':   p.id_categoria,
+                'nome_categoria': p.nome_categoria,
+                'id_produto':     p.id_produto,
+                'nome_produto':   p.nome_produto,
+                'quantidade':     p.quantidade,
+                'preco_unidade':  p.preco_unidade,
+                'preco_total':    p.preco_total
+            })
+        
+        VendaController.retirar_do_estoque(carrinho)
+        
+        id = IdDal.gerar_id('id_venda')
+        if not id:
+            raise ServerError('Não foi possível acessar o banco de dados!')
+
+        venda = VendaOnline(id, carrinho, login.id_cliente, login.cpf, lista_produtos=produtos)
+        return (VendaDal.cadastrar_venda_online(venda, codigo_venda), troco)
 
 
 # --------------------------------------------------

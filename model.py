@@ -58,21 +58,12 @@ class Cliente(Pessoa):
         self.carrinho = []
 
 
-class Venda:
-    def __init__(self, id_venda: int, id_cliente: int, id_produto: int, quantidade: int, preco_unitario: float):
-        self.id_venda = id_venda
-        self.id_cliente = id_cliente
-        self.id_produto = id_produto
-        self.quantidade = quantidade
-        self.preco_unitario = preco_unitario
-        self.preco_total = preco_unitario * quantidade
-
-
 class LoginFuncionario:
-    def __init__(self, id_funcionario: int, cpf: str, nome: str):
+    def __init__(self, id_funcionario: int, cpf: str, nome: str, admin=False):
         self.id_funcionario = id_funcionario
         self.cpf = cpf
         self.nome = nome
+        self.admin = admin
 
 
 class LoginCliente:
@@ -90,3 +81,47 @@ class Caixa:
         self.valor_no_caixa = valor_no_caixa
         self.id_funcionario = id_funcionario
         self.nome_funcionario = nome_funcionario
+
+
+class ProdutoNoCarrinho:
+    def __init__(self, id_categoria: int, nome_categoria, id_produto: int, nome_produto: str,
+                 quantidade: int, preco_unidade: float, preco_total: float):
+        self.id_categoria = id_categoria
+        self.nome_categoria = nome_categoria
+        self.id_produto = id_produto
+        self.nome_produto = nome_produto
+        self.quantidade = quantidade
+        self.preco_unidade = preco_unidade
+        self.preco_total = preco_total
+
+
+class Carrinho:
+    def __init__(self, produtos: list, preco_total: float):
+        self.produtos = produtos
+        self.preco_total = preco_total
+
+
+class Venda:
+    def __init__(self, id_venda: int, id_funcionario: int, carrinho: Carrinho,
+                 cpf_cliente: str=None, lista_produtos :list=None):
+        self.id_venda = id_venda
+        self.id_funcionario = id_funcionario
+        self.produtos = carrinho.produtos
+        self.preco_total = carrinho.preco_total
+        self.cpf_cliente = cpf_cliente
+
+        # opcional: lista dos produtos (para armazenamento em json)
+        self.lista_produtos = lista_produtos
+
+
+class VendaOnline:
+    def __init__(self, id_venda: int, carrinho: Carrinho, id_cliente: int,
+                 cpf_cliente: str, lista_produtos: list=None):
+        self.id_venda = id_venda
+        self.produtos = carrinho.produtos
+        self.preco_total = carrinho.preco_total
+        self.id_cliente = id_cliente
+        self.cpf_cliente = cpf_cliente
+
+        # opcional: lista dos produtos (para armazenamento em json)
+        self.lista_produtos = lista_produtos

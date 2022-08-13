@@ -1,7 +1,7 @@
 import json
 from operator import itemgetter
 
-from model import Categoria, Funcionario, Produto, Fornecedor, Lote, Cliente, Venda
+from model import Categoria, Funcionario, Produto, Fornecedor, Lote, Cliente, Venda, VendaOnline
 
 
 class IdDal:
@@ -170,7 +170,7 @@ class EstoqueDal:
 
 
     @staticmethod
-    def ler_produto(id_categoria: int, id_produto: int, codigo: json, retorna_obj=True) -> tuple:
+    def ler_produto_por_categoria(id_categoria: int, id_produto: int, codigo: json, retorna_obj=True) -> tuple:
         index = EstoqueDal.pesquisar_categoria(codigo, id_categoria)
         produtos = codigo[index]['produtos']
         
@@ -189,6 +189,28 @@ class EstoqueDal:
         return False
 
 
+    @staticmethod
+    def ler_produto_por_id(id_produto: int, codigo: json, retorna_obj=True) -> tuple:
+        for index_categoria, categoria in enumerate(codigo):
+            if index_categoria == 0:
+                continue
+
+            for index_produto, produto in categoria['produtos']:
+                if produto['id'] == id_produto:
+                    if retorna_obj:
+                        return (index_categoria, index_produto, 
+                        Produto(produto['id'],
+                                produto['id_categoria'],
+                                produto['nome'],
+                                produto['marca'],
+                                produto['preco'],
+                                produto['quantidade'],
+                                produto['id_fornecedor']))
+                    else:
+                        return (index_categoria, index_produto, produto)
+        return False
+                
+                
     @staticmethod
     def cadastrar_produto(produto: Produto, codigo: json) -> tuple:
         index = EstoqueDal.pesquisar_categoria(codigo, produto.id_categoria)
@@ -215,7 +237,7 @@ class EstoqueDal:
     @staticmethod
     def alterar_produto(id_produto: int, id_categoria_atual: int, codigo: json, **kwargs) -> tuple:
         index = EstoqueDal.pesquisar_categoria(codigo, id_categoria_atual)
-        i, produto = EstoqueDal.ler_produto(id_categoria_atual, id_produto, codigo, False)
+        i, produto = EstoqueDal.ler_produto_por_categoria(id_categoria_atual, id_produto, codigo, False)
 
         alteracao = {
             'id_categoria':  kwargs.get('id_categoria'),
@@ -248,7 +270,7 @@ class EstoqueDal:
 
     @staticmethod
     def remover_produto(id_produto: int, id_categoria: int, codigo: json) -> tuple:
-        i, p = EstoqueDal.ler_produto(id_categoria, id_produto, codigo, False)
+        i, p = EstoqueDal.ler_produto_por_categoria(id_categoria, id_produto, codigo, False)
         codigo[id_categoria]['produtos'].pop(i)
         
         try:
@@ -755,57 +777,107 @@ class VendaDal:
 
 	
     @staticmethod
-    def ler_venda(id_venda: int, codigo: json, retorna_obj=True) -> tuple:
-        for i, v in enumerate(codigo):
-            if v['id_venda'] == id_venda:
-				
-                if retorna_obj:
-                    return (i, Venda(v['id_venda'],
-									 v['id_cliente'],
-									 v['id_produto'],
-									 v['quantidade'],
-									 v['preco_unitario']))
-                return (i, v)
+    def ler_venda(id_venda: int, codigo: json, online=False, retorna_obj=True) -> tuple:
+        if online:
+            for i, v in enumerate(codigo['online']):
+                if v['id_venda'] == id_venda:
+                    
+                    if retorna_obj:
+                        return (i, Venda(v['id_venda'],
+                                        v['id_cliente'],
+                                        v['id_produto'],
+                                        v['quantidade'],
+                                        v['preco_unitario']))
+                    return (i, v)
+        else:
+            for i, v in enumerate(codigo['fisica']):
+                if v['id_venda'] == id_venda:
+                    
+                    if retorna_obj:
+                        return (i, Venda(v['id_venda'],
+                                        v['id_cliente'],
+                                        v['id_produto'],
+                                        v['quantidade'],
+                                        v['preco_unitario']))
+                    return (i, v)
         return False
 
 
     @staticmethod
-    def cadastrar_venda(venda: Venda, codigo: json) -> tuple:
+    def cadastrar_venda(venda: Venda, codigo: json, online=False) -> bool:
         dado = {
-			"id_venda":       venda.id_venda,
-			"id_cliente":     venda.id_cliente,
-			"id_produto":     venda.id_produto,
-			"quantidade":     venda.quantidade,
-			"preco_unitario": venda.preco_unitario,
-			"preco_total":    venda.preco_total
-		}
-		
-        codigo.append(dado)
-        codigo = sorted(codigo, key=itemgetter('id_venda'))
+            "id_venda":       venda.id_venda,
+            "id_funcionario": venda.id_funcionario,
+            "produtos":       venda.lista_produtos,
+            "preco_total":    venda.preco_total,
+            "cpf_cliente":    venda.cpf_cliente
+        }
+	
+        codigo['fisica'].append(dado)
+        codigo['fisica'] = sorted(codigo['fisica'], key=itemgetter('id_venda'))
 		
         try:
             VendaDal.salvar_arquivo(codigo)
-            return (True, 'Venda cadastrada com sucesso!')
+            return True
         except:
-            return (False, 'Não foi possível cadastrar a venda!')
+            return False
+    
+
+    @staticmethod
+    def cadastrar_venda_online(venda: VendaOnline, codigo: json) -> bool:
+        dado = {
+            "id_venda":    venda.id_venda,
+            "produtos":    venda.lista_produtos,
+            "preco_total": venda.preco_total,
+            "id_cliente":  venda.id_cliente,
+            "cpf_cliente": venda.cpf_cliente
+        }
+		
+        codigo['online'].append(dado)
+        codigo['online'] = sorted(codigo['online'], key=itemgetter('id_venda'))
+		
+        try:
+            VendaDal.salvar_arquivo(codigo)
+            return True
+        except:
+            return False
 	
 	
     @staticmethod
     def alterar_venda(id_venda: int, codigo: json, **kwargs) -> tuple:
-        index, venda = VendaDal.ler_venda(id_venda, codigo, retorna_obj=False)
+        index, venda = VendaDal.ler_venda(id_venda, codigo, online=False, retorna_obj=False)
 
         alteracao = {
-			"id_cliente":     kwargs.get('id_cliente'),
-			"id_produto":     kwargs.get('id_produto'),
-			"quantidade":     kwargs.get('quantidade'),
-			"preco_unitario": kwargs.get('preco_unitario'),
+			"produtos":       kwargs.get('produtos'),
 			"preco_total":    kwargs.get('preco_total')
 		}
         for chave, valor in alteracao.items():
             if valor != None:
                 venda[chave] = valor
         
-        codigo[index] = venda
+        codigo['fisica'][index] = venda
+
+        try:
+            VendaDal.salvar_arquivo(codigo)
+            return (True, 'Venda alterada com sucesso!')
+        except:
+            return (False, 'Não foi possível alterar a venda!')
+    
+
+    @staticmethod
+    def alterar_venda_online(id_venda: int, codigo: json, **kwargs) -> tuple:
+        index, venda = VendaDal.ler_venda(id_venda, codigo, online=True, retorna_obj=False)
+
+        alteracao = {
+			"produtos":    kwargs.get('produtos'),
+			"preco_total": kwargs.get('preco_total')
+		}
+        for chave, valor in alteracao.items():
+            if valor != None:
+                venda[chave] = valor
+        
+        codigo['online'][index] = venda
+
         try:
             VendaDal.salvar_arquivo(codigo)
             return (True, 'Venda alterada com sucesso!')
@@ -814,9 +886,13 @@ class VendaDal:
 
 	
     @staticmethod
-    def remover_cliente(id_venda: int, codigo: json) -> tuple:
-        index, venda = VendaDal.ler_venda(id_venda, codigo)
-        codigo.pop(index)
+    def remover_venda(id_venda: int, codigo: json, online=False) -> tuple:
+        index, venda = VendaDal.ler_venda(id_venda, codigo, online, retorna_obj=False)
+
+        if online:
+            codigo['online'].pop(index)
+        else:
+            codigo['fisica'].pop(index)
 
         try:
             VendaDal.salvar_arquivo(codigo)

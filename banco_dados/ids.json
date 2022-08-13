@@ -28,5 +28,9 @@
         "ids_vazios": [
             1
         ]
+    },
+    "id_venda": {
+        "novo_id": 7,
+        "ids_vazios": []
     }
 }

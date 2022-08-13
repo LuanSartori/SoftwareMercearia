@@ -3,6 +3,8 @@ import re
 import datetime
 import bcrypt
 
+from model import ProdutoNoCarrinho
+
 
 def telefone_valido(telefone):
     try:
@@ -103,3 +105,19 @@ def proximo_lote(tempo: dict):
     proximo = datetime.datetime.strftime(proximo, '%d/%m/%Y')
     tempo['proximo'] = proximo
     return tempo
+
+
+def contar_quantidade(produto: dict) -> int:
+    quantidade = 0
+    for q in produto['quantidade']:
+        quantidade += q[1]
+    
+    return quantidade
+
+
+def preco_total(*produtos) -> float:
+    preco_total = 0
+    for i, p in enumerate(produtos):
+        preco_total += p.preco_total
+    
+    return preco_total
