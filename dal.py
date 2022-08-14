@@ -2,6 +2,7 @@ import json
 from operator import itemgetter
 
 from model import Categoria, Funcionario, Produto, Fornecedor, Lote, Cliente, Venda, VendaOnline
+from utils import ServerError, IdError
 
 
 class IdDal:
@@ -21,18 +22,21 @@ class IdDal:
                     json.dump(codigo, arq, indent=4)
                     return id_gerado
         except:
-            return False
+            raise ServerError('Não foi possível acessar o banco de dados!')
 
 
     @staticmethod
     def remover_id(chave: str, id: int):
-        with open('banco_dados/ids.json', 'r') as arq:
-            codigo = json.load(arq)
-            codigo[chave]['ids_vazios'].append(id)
-            codigo[chave]['ids_vazios'].sort()
+        try:
+            with open('banco_dados/ids.json', 'r') as arq:
+                codigo = json.load(arq)
+                codigo[chave]['ids_vazios'].append(id)
+                codigo[chave]['ids_vazios'].sort()
 
-            with open('banco_dados/ids.json', 'w') as arq:
-                json.dump(codigo, arq, indent=4)
+                with open('banco_dados/ids.json', 'w') as arq:
+                    json.dump(codigo, arq, indent=4)
+        except:
+            raise ServerError('Não foi possívela acessar o banco de dados!')
 
 
 # --------------------------------------------------
@@ -46,13 +50,16 @@ class CategoriaDal:
             with open('banco_dados/categorias.json', 'r') as arq:
                 return json.load(arq)
         except:
-            return False
+            raise ServerError('Não foi possível acessar o banco de dados!')
     
 
     @staticmethod
     def salvar_arquivo(codigo: json) -> bool:
-        with open('banco_dados/categorias.json', 'w') as arq:
-            json.dump(codigo, arq, indent=4)
+        try:
+            with open('banco_dados/categorias.json', 'w') as arq:
+                json.dump(codigo, arq, indent=4)
+        except:
+            raise ServerError('Não foi possível acessar o banco de dados!')
 
 
     @staticmethod
@@ -64,43 +71,38 @@ class CategoriaDal:
 
 
     @staticmethod
-    def salvar_categoria(categoria: Categoria, codigo: json, codigo_estoque: json) -> tuple:
+    def salvar_categoria(categoria: Categoria, codigo: json, codigo_estoque: json) -> bool:
         nova_categoria = {'id': categoria.id, 'categoria': categoria.categoria}
         codigo.append(nova_categoria)
         codigo = sorted(codigo, key=itemgetter('id'))
 
-        try:
-            CategoriaDal.salvar_arquivo(codigo)
-            EstoqueDal.salvar_categoria(categoria, codigo_estoque)
-            return (True, 'Categoria cadastrada com sucesso!')
-        except:
-            return (False, 'Não foi possível cadastrar a categoria!')
+        CategoriaDal.salvar_arquivo(codigo)
+        EstoqueDal.salvar_categoria(categoria, codigo_estoque)
+        return True
 
 
     @staticmethod
-    def alterar_categoria(id_categoria: int, alteracao: Categoria, i: int, codigo: json, codigo_estoque: json) -> tuple:
-        codigo[i] = {'id': alteracao.id, 'categoria': alteracao.categoria}
-        try:
-            CategoriaDal.salvar_arquivo(codigo)
-            EstoqueDal.alterar_categoria(alteracao, codigo_estoque)
-            return (True, 'Categoria alterada com sucesso!')
-        except:
-            return (False, 'Não foi possível alterar a categoria!')
+    def alterar_categoria(index_categoria: int, alteracao: Categoria,
+                          codigo: json, codigo_estoque: json) -> bool:
+        
+        codigo[index_categoria] = {'id': alteracao.id, 'categoria': alteracao.categoria}
+
+        CategoriaDal.salvar_arquivo(codigo)
+        EstoqueDal.alterar_categoria(alteracao, codigo_estoque)
+        return True
     
 
     @staticmethod
-    def remover_categoria(id_categoria: int, index: int, codigo: json, codigo_estoque: json) -> tuple:
-        try:
-            codigo.pop(index)
-            CategoriaDal.salvar_arquivo(codigo)
+    def remover_categoria(id_categoria: int, index: int, codigo: json, codigo_estoque: json) -> bool:
+        codigo.pop(index)
+        CategoriaDal.salvar_arquivo(codigo)
 
-            # adiciona o id removido ao banco de dados e remove a categoria do estoque
-            IdDal.remover_id('id_categoria', id_categoria)
-            EstoqueDal.remover_categoria(id_categoria, codigo_estoque)
+        # adiciona o id removido ao banco de dados e remove a categoria do estoque
+        IdDal.remover_id('id_categoria', id_categoria)
+        EstoqueDal.remover_categoria(id_categoria, codigo_estoque)
 
-            return (True, 'Categoria removida com sucesso!')
-        except:
-            return (False, 'Não foi possível remover a categoria!')
+        return True
+
 
 # --------------------------------------------------
 # --------------------------------------------------
@@ -113,13 +115,16 @@ class EstoqueDal:
             with open('banco_dados/estoque.json', 'r') as arq:
                 return json.load(arq)
         except:
-            return False
+            raise ServerError('Não foi possível acessar o banco de dados!')
     
 
     @staticmethod
     def salvar_arquivo(codigo: json):
-        with open('banco_dados/estoque.json', 'w') as arq:
-            json.dump(codigo, arq, indent=4)
+        try:
+            with open('banco_dados/estoque.json', 'w') as arq:
+                json.dump(codigo, arq, indent=4)
+        except:
+            raise ServerError('Não foi possível acessar o banco de dados!')
     
 
     @staticmethod
@@ -127,46 +132,38 @@ class EstoqueDal:
         for i, c in enumerate(codigo):
             if c['id'] == id_categoria:
                 return i
+        return False
     
 
     @staticmethod
-    def salvar_categoria(categoria: Categoria, codigo: json) -> tuple:
+    def salvar_categoria(categoria: Categoria, codigo: json) -> bool:
         dado = {"id": categoria.id, "categoria": categoria.categoria, "produtos": []}
         codigo.append(dado)
         codigo = sorted(codigo, key=itemgetter('id'))
 
-        try:
-            EstoqueDal.salvar_arquivo(codigo)
-            return (True, 'Categoria salva com sucesso!')
-        except:
-            return (False, 'Não foi possível salvar a categoria!')
+        EstoqueDal.salvar_arquivo(codigo)
+        return True
 
 
     @staticmethod
-    def alterar_categoria(alteracao: Categoria, codigo: json) -> tuple:
+    def alterar_categoria(alteracao: Categoria, codigo: json) -> bool:
         index = EstoqueDal.pesquisar_categoria(codigo, alteracao.id)
         codigo[index]['categoria'] = alteracao.categoria
 
-        try:
-            EstoqueDal.salvar_arquivo(codigo)
-            return (True, 'Categoria alterada com sucesso!')
-        except:
-            return (False, 'Não foi possível alterar a categoria!')
+        EstoqueDal.salvar_arquivo(codigo)
+        return True
     
 
     @staticmethod
-    def remover_categoria(id_categoria: int, codigo: json) -> tuple:
+    def remover_categoria(id_categoria: int, codigo: json) -> bool:
         index = EstoqueDal.pesquisar_categoria(codigo, id_categoria)
         for p in codigo[index]['produtos']:
             p['id_categoria'] = 0
             codigo[1]['produtos'].append(p)
         codigo.pop(index)
 
-        try:
-            EstoqueDal.salvar_arquivo(codigo)
-            return (True, 'Categoria Removida com sucesso')
-        except:
-            return (False, 'Não foi possível remover a categoria!')
+        EstoqueDal.salvar_arquivo(codigo)
+        return True
 
 
     @staticmethod
@@ -212,7 +209,7 @@ class EstoqueDal:
                 
                 
     @staticmethod
-    def cadastrar_produto(produto: Produto, codigo: json) -> tuple:
+    def cadastrar_produto(produto: Produto, codigo: json) -> bool:
         index = EstoqueDal.pesquisar_categoria(codigo, produto.id_categoria)
         dado = {
             'id':            produto.id,
@@ -227,15 +224,12 @@ class EstoqueDal:
         codigo[index]['produtos'].append(dado)
         codigo[index]['produtos'] = sorted(codigo[index]['produtos'], key=itemgetter('id'))
 
-        try:
-            EstoqueDal.salvar_arquivo(codigo)
-            return (True, 'Produto cadastrado com sucesso!')
-        except:
-            return (False, 'Não foi possível cadastrar o produto!')
+        EstoqueDal.salvar_arquivo(codigo)
+        return True
     
 
     @staticmethod
-    def alterar_produto(id_produto: int, id_categoria_atual: int, codigo: json, **kwargs) -> tuple:
+    def alterar_produto(id_produto: int, id_categoria_atual: int, codigo: json, **kwargs) -> bool:
         index = EstoqueDal.pesquisar_categoria(codigo, id_categoria_atual)
         i, produto = EstoqueDal.ler_produto_por_categoria(id_categoria_atual, id_produto, codigo, False)
 
@@ -261,42 +255,22 @@ class EstoqueDal:
             codigo[index]['produtos'][i] = produto
 
 
-        try:
-            EstoqueDal.salvar_arquivo(codigo)
-            return (True, 'Produto alterado com sucesso!')
-        except:
-            return (False, 'Não foi possível alterar o produto!')
+        EstoqueDal.salvar_arquivo(codigo)
+        return True
     
 
     @staticmethod
-    def remover_produto(id_produto: int, id_categoria: int, codigo: json) -> tuple:
+    def remover_produto(id_produto: int, id_categoria: int, codigo: json) -> bool:
         i, p = EstoqueDal.ler_produto_por_categoria(id_categoria, id_produto, codigo, False)
         codigo[id_categoria]['produtos'].pop(i)
         
-        try:
-            EstoqueDal.salvar_arquivo(codigo)
-
-            # adiciona o id removido ao banco de dados
-            IdDal.remover_id('id_produto', id_produto)
-
-            return (True, 'Produto removido com sucesso!')
-        except:
-            return (False, 'Não foi possível remover o produto!')
+        EstoqueDal.salvar_arquivo(codigo)
+        IdDal.remover_id('id_produto', id_produto)
+        return True
 
 
     @staticmethod
-    def verificar_validade(codigo: json, vencido: bool) -> tuple:
-        try:
-            EstoqueDal.salvar_arquivo(codigo)
-            if vencido:
-                return (True, 'Produtos vencidos removidos!')
-            return (False, 'Sem produtos vencidos ;)')
-        except:
-            return False
-
-
-    @staticmethod
-    def cadastrar_vencido(produto: dict, quantidade: list, codigo: json) -> json:
+    def transferir_vencido(produto: dict, quantidade: list, codigo: json) -> json:
         dado = {
             'id':         produto['id'],
             'nome':       produto['nome'],
@@ -316,7 +290,7 @@ class EstoqueDal:
     
 
     @staticmethod
-    def remover_vencidos(codigo: json, id_produto=None) -> tuple:
+    def remover_vencidos(codigo: json, id_produto=None) -> bool:
         if not id_produto:
             codigo[0]['produtos'] = []
         else:
@@ -324,11 +298,8 @@ class EstoqueDal:
                 if p['id'] == id_produto:
                     codigo[0]['produtos'].pop(i)
         
-        try:
-            EstoqueDal.salvar_arquivo(bool)
-            return (True, 'Produtos vencidos removidos com sucesso!')
-        except:
-            return (False, 'Não foi possível remover os produtos vencidos!')
+        EstoqueDal.salvar_arquivo(codigo)
+        return True
 
 
 # --------------------------------------------------
@@ -342,13 +313,16 @@ class FornecedorDal:
             with open('banco_dados/fornecedores.json', 'r') as arq:
                 return json.load(arq)
         except:
-            return False
+            raise ServerError('Não foi possível acessar o banco de dados!')
     
 
     @staticmethod
     def salvar_arquivo(codigo: json):
-        with open('banco_dados/fornecedores.json', 'w') as arq:
-            json.dump(codigo, arq, indent=4)
+        try:
+            with open('banco_dados/fornecedores.json', 'w') as arq:
+                json.dump(codigo, arq, indent=4)
+        except:
+            raise ServerError('Não foi possível acessar o banco de dados!')
     
 
     @staticmethod
@@ -370,28 +344,26 @@ class FornecedorDal:
 
 
     @staticmethod
-    def cadastrar_fornecedor(fornecedor: Fornecedor, codigo: json) -> tuple:
+    def cadastrar_fornecedor(fornecedor: Fornecedor, codigo: json) -> bool:
         dado = {
-                  "id": fornecedor.id,
-                "nome": fornecedor.nome,
+            "id":       fornecedor.id,
+            "nome":     fornecedor.nome,
             "telefone": fornecedor.telefone,
-               "email": fornecedor.email,
-                "cnpj": fornecedor.cnpj,
-               "lotes": fornecedor.lotes
+            "email":    fornecedor.email,
+            "cnpj":     fornecedor.cnpj,
+            "lotes":    fornecedor.lotes
         }
 
         codigo.append(dado)
         codigo = sorted(codigo, key=itemgetter('id'))
-        try:
-            FornecedorDal.salvar_arquivo(codigo)
-            return (True, 'Fornecedor cadastrado com sucesso!')
-        except:
-            return (False, 'Não foi possível cadastrar o fornecedor')
+
+        FornecedorDal.salvar_arquivo(codigo)
+        return True
     
 
     @staticmethod
     def alterar_fornecedor(id_fornecedor: int, codigo: json, **kwargs) -> tuple:
-        index, fornecedor = FornecedorDal.ler_fornecedor(codigo, id)
+        index, fornecedor = FornecedorDal.ler_fornecedor(codigo, id_fornecedor)
 
         alteracao = {
             "nome":     kwargs.get('nome'),
@@ -413,19 +385,13 @@ class FornecedorDal:
 
 
     @staticmethod
-    def remover_fornecedor(id_fornecedor: int, codigo: json) -> tuple:
+    def remover_fornecedor(id_fornecedor: int, codigo: json) -> bool:
         index, fornecedor = FornecedorDal.ler_fornecedor(codigo, id_fornecedor)
         codigo.pop(index)
 
-        try:
-            FornecedorDal.salvar_arquivo(codigo)
-            
-            # adiciona o id removido ao banco de dados
-            IdDal.remover_id('id_fornecedor', id_fornecedor)
-
-            return (True, 'Fornecedor removido com sucesso!')
-        except:
-            return (False, 'Não foi possível remover este fornecedor!')
+        FornecedorDal.salvar_arquivo(codigo)
+        IdDal.remover_id('id_fornecedor', id_fornecedor)
+        return True
 
 
     @staticmethod
@@ -452,7 +418,7 @@ class FornecedorDal:
 
 
     @staticmethod
-    def cadastrar_lote(id_fornecedor: int, lote: Lote, codigo: json) -> tuple:
+    def cadastrar_lote(id_fornecedor: int, lote: Lote, codigo: json) -> bool:
         index, fornecedor = FornecedorDal.ler_fornecedor(codigo, id_fornecedor)
 
         dado = {
@@ -465,15 +431,13 @@ class FornecedorDal:
         }
         codigo[index]['lotes'].append(dado)
         codigo[index]['lotes'] = sorted(codigo[index]['lotes'], key=itemgetter('id_lote'))
-        try:
-            FornecedorDal.salvar_arquivo(codigo)
-            return (True, 'Lote cadastrado com sucesso!')
-        except:
-            return (False, 'Não foi possível cadastrar o lote!')
+
+        FornecedorDal.salvar_arquivo(codigo)
+        return True
     
 
     @staticmethod
-    def alterar_lote(id_fornecedor: int, id_lote: int, codigo: json, **kwargs) -> tuple:
+    def alterar_lote(id_fornecedor: int, id_lote: int, codigo: json, **kwargs) -> bool:
         index_fornecedor, fornecedor = FornecedorDal.ler_fornecedor(codigo, id_fornecedor)
         index_lote, lote = FornecedorDal.ler_lote(id_fornecedor, codigo, id_lote=id_lote, retorna_obj=False)
 
@@ -490,38 +454,28 @@ class FornecedorDal:
                 lote[chave] = valor
         
         codigo[index_fornecedor]['lotes'][index_lote] = lote
-        try:
-            FornecedorDal.salvar_arquivo(codigo)
-            return (True, 'Lote alterado com sucesso!')
-        except:
-            return (False, 'Não foi possível alterar o lote!')
+
+        FornecedorDal.salvar_arquivo(codigo)
+        return (True, 'Lote alterado com sucesso!')
 
 
     @staticmethod
-    def remover_lote(id_fornecedor: int, id_lote: int, codigo: json) -> tuple:
+    def remover_lote(id_fornecedor: int, id_lote: int, codigo: json) -> bool:
         index_fornecedor, fornecedor = FornecedorDal.ler_fornecedor(codigo, id_fornecedor, False)
         index_lote, lote = FornecedorDal.ler_lote(id_fornecedor, codigo, id_lote=id_lote, retorna_obj=False)
 
         codigo[index_fornecedor]['lotes'].pop(index_lote)
 
-        try:
-            FornecedorDal.salvar_arquivo(codigo)
-            IdDal.remover_id('id_lote', id_lote)
-
-            return (True, 'Lote removido com sucesso!')
-        except:
-            return (False, 'Não foi possível remover o lote!')
+        FornecedorDal.salvar_arquivo(codigo)
+        IdDal.remover_id('id_lote', id_lote)
+        return True
     
 
     @staticmethod
-    def lote_recebido(codigo_fornecedor: json, codigo_estoque: json) -> tuple:
-        try:
-            FornecedorDal.salvar_arquivo(codigo_fornecedor)
-            EstoqueDal.salvar_arquivo(codigo_estoque)
-
-            return (True, 'Lote recebido com sucesso!')
-        except:
-            return (False, 'Falha ao receber o lote!')
+    def lote_recebido(codigo_fornecedor: json, codigo_estoque: json) -> bool:
+        FornecedorDal.salvar_arquivo(codigo_fornecedor)
+        EstoqueDal.salvar_arquivo(codigo_estoque)
+        return True
 
 
 # --------------------------------------------------
@@ -535,13 +489,16 @@ class FuncionarioDal:
             with open('banco_dados/funcionarios.json', 'r') as arq:
                 return json.load(arq)
         except:
-            return False
+            raise ServerError('Não foi possível acessar o banco de dados!')
     
 
     @staticmethod
     def salvar_arquivo(codigo: json):
-        with open('banco_dados/funcionarios.json', 'w') as arq:
-            json.dump(codigo, arq, indent=4)
+        try:
+            with open('banco_dados/funcionarios.json', 'w') as arq:
+                json.dump(codigo, arq, indent=4)
+        except:
+            raise ServerError('Não foi possível acessar o banco de dados!')
     
     
     @staticmethod
@@ -577,7 +534,7 @@ class FuncionarioDal:
     
 
     @staticmethod
-    def cadastrar_funcionario(funcionario: Funcionario, codigo: json, admin=False, posicao=None) -> tuple:
+    def cadastrar_funcionario(funcionario: Funcionario, codigo: json, admin=False, posicao=None) -> bool:
         dado = {
             'id':       funcionario.id,
             'cpf':      funcionario.cpf,
@@ -596,17 +553,12 @@ class FuncionarioDal:
             codigo['funcionarios'].append(dado)
             codigo['funcionarios'] = sorted(codigo['funcionarios'], key=itemgetter('id'))
         
-        try:
-            FuncionarioDal.salvar_arquivo(codigo)
-            if admin:
-                return (True, 'ADM cadastrado com sucesso!')
-            return (True, 'Funcionário cadastrado com sucesso!')
-        except:
-            return (False, 'Não foi possível cadastrar o funcionário!')
+        FuncionarioDal.salvar_arquivo(codigo)
+        return True
     
 
     @staticmethod
-    def alterar_funcionario(id_funcionario: int, codigo: json, admin=False, posicao=None, **kwargs) -> tuple:
+    def alterar_funcionario(id_funcionario: int, codigo: json, admin=False, posicao=None, **kwargs) -> bool:
         index, funcionario = FuncionarioDal.ler_funcionario(codigo, id_funcionario, admin=admin, retorna_obj=False)
 
         alteracao = {
@@ -628,18 +580,13 @@ class FuncionarioDal:
         else:
             codigo['funcionarios'][index] = funcionario
 
-        try:
-            FuncionarioDal.salvar_arquivo(codigo)
-
-            if admin:
-                return (True, 'ADM alterado com sucesso!')
-            return (True, 'Funcionário alterado com sucesso!')
-        except:
-            return (False, 'Não foi possível alterar o funcionário!')
+        
+        FuncionarioDal.salvar_arquivo(codigo)
+        return True
     
 
     @staticmethod
-    def remover_funcionario(id_funcionario: int, codigo: json, admin=False) -> tuple:
+    def remover_funcionario(id_funcionario: int, codigo: json, admin=False) -> bool:
         index, funcionario = FuncionarioDal.ler_funcionario(codigo, id_funcionario, admin=admin, retorna_obj=False)
 
         if admin:
@@ -647,18 +594,13 @@ class FuncionarioDal:
         else:
             codigo['funcionarios'].pop(index)
 
-        try:
-            FuncionarioDal.salvar_arquivo(codigo)
-            
-            if admin:
-                IdDal.remover_id('id_admin', id_funcionario)
-                return (True, 'ADM removido com sucesso!')
-            else:
-                IdDal.remover_id('id_funcionario', id_funcionario)
-                return (True, 'Funcionário removido com sucesso!')
-                    
-        except:
-            return (False, 'Não foi possível remover o funcionário!')
+        FuncionarioDal.salvar_arquivo(codigo)
+        if admin:
+            IdDal.remover_id('id_admin', id_funcionario)
+        else:
+            IdDal.remover_id('id_funcionario', id_funcionario)
+
+        return True
 
 
 # --------------------------------------------------
@@ -672,13 +614,16 @@ class ClienteDal:
             with open('banco_dados/clientes.json', 'r') as arq:
                 return json.load(arq)
         except:
-            return False
+            raise ServerError('Não foi possível acessar o banco de dados!')
     
 
     @staticmethod
     def salvar_arquivo(codigo: json):
-        with open('banco_dados/clientes.json', 'w') as arq:
-            json.dump(codigo, arq, indent=4)
+        try:
+            with open('banco_dados/clientes.json', 'w') as arq:
+                json.dump(codigo, arq, indent=4)
+        except:
+            raise ServerError('Não foi possível acessar o banco de dados!')
     
 
     @staticmethod
@@ -698,7 +643,7 @@ class ClienteDal:
     
 
     @staticmethod
-    def cadastrar_cliente(cliente: Cliente, codigo: json) -> tuple:
+    def cadastrar_cliente(cliente: Cliente, codigo: json) -> bool:
         dado = {
             'id': cliente.id,
             'nome': cliente.nome,
@@ -712,15 +657,12 @@ class ClienteDal:
         codigo.append(dado)
         codigo = sorted(codigo, key=itemgetter('id'))
 
-        try:
-            ClienteDal.salvar_arquivo(codigo)
-            return (True, 'Cliente cadastrado com sucesso!')
-        except:
-            return (False, 'Não foi possível cadastrar o cliente!')
+        ClienteDal.salvar_arquivo(codigo)
+        return True
     
 
     @staticmethod
-    def alterar_cliente(id_cliente: int, codigo: json, **kwargs) -> tuple:
+    def alterar_cliente(id_cliente: int, codigo: json, **kwargs) -> bool:
         index, cliente = ClienteDal.ler_cliente(codigo, id_cliente, False)
 
         alteracao = {
@@ -735,25 +677,18 @@ class ClienteDal:
                 cliente[chave] = valor
         
         codigo[index] = cliente
-        try:
-            ClienteDal.salvar_arquivo(codigo)
-            return (True, 'Cliente alterado com sucesso!')
-        except:
-            return (False, 'Não foi possível alterar o cliente!')
+        ClienteDal.salvar_arquivo(codigo)
+        return True
     
 
     @staticmethod
-    def remover_cliente(id_cliente: int, codigo: json) -> tuple:
+    def remover_cliente(id_cliente: int, codigo: json) -> bool:
         index, cliente = ClienteDal.ler_cliente(codigo, id_cliente)
         codigo.pop(index)
 
-        try:
-            ClienteDal.salvar_arquivo(codigo)
-            IdDal.remover_id('id_cliente', id_cliente)
-
-            return (True, 'Cliente removido com sucesso!')
-        except:
-            return (False, 'Não foi possível remover o cliente!')
+        ClienteDal.salvar_arquivo(codigo)
+        IdDal.remover_id('id_cliente', id_cliente)
+        return True
 
 
 # --------------------------------------------------
@@ -767,13 +702,16 @@ class VendaDal:
             with open('banco_dados/vendas.json', 'r') as arq:
                 return json.load(arq)
         except:
-            return False
+            raise ServerError('Não foi possível acessar o banco de dados!')
 	
 
     @staticmethod
     def salvar_arquivo(codigo: json):
-        with open('banco_dados/vendas.json', 'w') as arq:
-            json.dump(codigo, arq, indent=4)
+        try:
+            with open('banco_dados/vendas.json', 'w') as arq:
+                json.dump(codigo, arq, indent=4)
+        except:
+            raise ServerError('Não foi possível acessar o banco de dados!')
 
 	
     @staticmethod
@@ -804,7 +742,7 @@ class VendaDal:
 
 
     @staticmethod
-    def cadastrar_venda(venda: Venda, codigo: json, online=False) -> bool:
+    def cadastrar_venda(venda: Venda, codigo: json) -> bool:
         dado = {
             "id_venda":       venda.id_venda,
             "id_funcionario": venda.id_funcionario,
@@ -816,11 +754,8 @@ class VendaDal:
         codigo['fisica'].append(dado)
         codigo['fisica'] = sorted(codigo['fisica'], key=itemgetter('id_venda'))
 		
-        try:
-            VendaDal.salvar_arquivo(codigo)
-            return True
-        except:
-            return False
+        VendaDal.salvar_arquivo(codigo)
+        return True
     
 
     @staticmethod
@@ -836,15 +771,12 @@ class VendaDal:
         codigo['online'].append(dado)
         codigo['online'] = sorted(codigo['online'], key=itemgetter('id_venda'))
 		
-        try:
-            VendaDal.salvar_arquivo(codigo)
-            return True
-        except:
-            return False
+        VendaDal.salvar_arquivo(codigo)
+        return True
 	
 	
     @staticmethod
-    def alterar_venda(id_venda: int, codigo: json, **kwargs) -> tuple:
+    def alterar_venda(id_venda: int, codigo: json, **kwargs) -> bool:
         index, venda = VendaDal.ler_venda(id_venda, codigo, online=False, retorna_obj=False)
 
         alteracao = {
@@ -857,15 +789,12 @@ class VendaDal:
         
         codigo['fisica'][index] = venda
 
-        try:
-            VendaDal.salvar_arquivo(codigo)
-            return (True, 'Venda alterada com sucesso!')
-        except:
-            return (False, 'Não foi possível alterar a venda!')
+        VendaDal.salvar_arquivo(codigo)
+        return True
     
 
     @staticmethod
-    def alterar_venda_online(id_venda: int, codigo: json, **kwargs) -> tuple:
+    def alterar_venda_online(id_venda: int, codigo: json, **kwargs) -> bool:
         index, venda = VendaDal.ler_venda(id_venda, codigo, online=True, retorna_obj=False)
 
         alteracao = {
@@ -878,15 +807,12 @@ class VendaDal:
         
         codigo['online'][index] = venda
 
-        try:
-            VendaDal.salvar_arquivo(codigo)
-            return (True, 'Venda alterada com sucesso!')
-        except:
-            return (False, 'Não foi possível alterar a venda!')
+        VendaDal.salvar_arquivo(codigo)
+        return True
 
 	
     @staticmethod
-    def remover_venda(id_venda: int, codigo: json, online=False) -> tuple:
+    def remover_venda(id_venda: int, codigo: json, online=False) -> bool:
         index, venda = VendaDal.ler_venda(id_venda, codigo, online, retorna_obj=False)
 
         if online:
@@ -894,13 +820,9 @@ class VendaDal:
         else:
             codigo['fisica'].pop(index)
 
-        try:
-            VendaDal.salvar_arquivo(codigo)
-            IdDal.remover_id('id_venda', id_venda)
-
-            return (True, 'Venda removida com sucesso!')
-        except:
-            return (False, 'Não foi possível remover a venda!')
+        VendaDal.salvar_arquivo(codigo)
+        IdDal.remover_id('id_venda', id_venda)
+        return True
 
 
 # --------------------------------------------------
@@ -914,13 +836,16 @@ class CaixaDal:
             with open('banco_dados/caixas.json', 'r') as arq:
                 return json.load(arq)
         except:
-            return False
+            raise ServerError('Não foi possível acessar o banco de dados!')
 	
 
     @staticmethod
     def salvar_arquivo(codigo: json):
-        with open('banco_dados/caixas.json', 'w') as arq:
-            json.dump(codigo, arq, indent=4)
+        try:
+            with open('banco_dados/caixas.json', 'w') as arq:
+                json.dump(codigo, arq, indent=4)
+        except:
+            raise ServerError('Não foi possível acessar o banco de dados!')
     
 
     @staticmethod
@@ -932,20 +857,18 @@ class CaixaDal:
 
 
     @staticmethod
-    def cadastrar_caixa(numero_caixa: int, valor_no_caixa: float):
+    def cadastrar_caixa(numero_caixa: int, valor_no_caixa: float) -> bool:
         dado = {
             "numero_caixa":   numero_caixa,
             "valor_no_caixa": valor_no_caixa
         }
-        try:
-            CaixaDal.salvar_arquivo(dado)
-            return (True, 'Caixa cadastrado com sucesso!')
-        except:
-            return (False, 'Não foi possível cadastrar o caixa!')
+        
+        CaixaDal.salvar_arquivo(dado)
+        return True
     
 
     @staticmethod
-    def alterar_caixa(numero_caixa: int, codigo: json, **kwargs):
+    def alterar_caixa(numero_caixa: int, codigo: json, **kwargs) -> bool:
         index, caixa = CaixaDal.ler_caixa(numero_caixa, codigo)
 
         alteracao = {
@@ -957,24 +880,18 @@ class CaixaDal:
                 caixa[chave] = valor
         
         codigo[index] = caixa
-        try:
-            CaixaDal.salvar_arquivo(codigo)
-            return (True, 'Caixa alterado com sucesso!')
-        except:
-            return (False, 'Não foi possível alterar o caixa!')
+
+        CaixaDal.salvar_arquivo(codigo)
+        return True
 
 
     @staticmethod
-    def remover_caixa(numero_caixa: int, codigo: json):
+    def remover_caixa(numero_caixa: int, codigo: json) -> bool:
         index, caixa = CaixaDal.ler_caixa(numero_caixa, codigo)
         codigo.pop(index)
 
-        try:
-            CaixaDal.salvar_arquivo(codigo)
-
-            return (True, 'Caixa removido com sucesso!')
-        except:
-            return (False, 'Não foi possível remover o caixa!')
+        CaixaDal.salvar_arquivo(codigo)
+        return True
 
 
 # --------------------------------------------------

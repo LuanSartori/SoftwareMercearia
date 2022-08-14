@@ -3,7 +3,15 @@ import re
 import datetime
 import bcrypt
 
-from model import ProdutoNoCarrinho
+
+class IdError(Exception):
+    def __init__(self, *objects):
+        pass
+
+
+class ServerError(Exception):
+    def __init__(self, *objects):
+        pass
 
 
 def telefone_valido(telefone):
