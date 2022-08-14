@@ -246,10 +246,12 @@ class FornecedorController:
                 if f['cnpj'] == cnpj:
                     raise ValueError('Já existe um fornecedor cadastrado com este CNPJ!')
 
-        if (not nome) or 5 > len(nome) > 50 or not nome.isnumeric():
+        if (not nome) or 5 > len(nome) > 50:
             raise ValueError('Nome inválido!')
+        if nome.isnumeric():
+            raise TypeError('O nome não pode ser um número!')
 
-        telefone = telefone_valido(telefone)
+        telefone = formatar_telefone(telefone)
         if not telefone:
             raise ValueError('Telefone inválido!')
 
@@ -276,7 +278,7 @@ class FornecedorController:
                 raise ValueError('Nome inválido!')
 
         if kwargs.get('telefone') != None:
-            telefone = telefone_valido(kwargs.get('telefone'))
+            telefone = formatar_telefone(kwargs.get('telefone'))
             if not telefone:
                 raise ValueError('Telefone inválido!')
 
@@ -403,10 +405,12 @@ class FuncionarioController:
 
         # aqui vamos verificar se a posicao do ADM que está logado não é menor do que a do ADM que ele quer cadastrar, para isso vamos receber um parâmetro a mais !!!
         
-        if (not nome) or 5 > len(nome) > 50 or nome.isnumeric():
+        if (not nome) or 5 > len(nome) > 50:
             raise ValueError('Nome inválido!')
+        if nome.isnumeric():
+            raise TypeError('O nome não pode ser um número!')
 
-        telefone = telefone_valido(telefone)
+        telefone = formatar_telefone(telefone)
         if not telefone:
             raise ValueError('Telefone inválido!')
 
@@ -462,7 +466,7 @@ class FuncionarioController:
                 raise ValueError(False, 'Nome inválido!')
 
         if kwargs.get('telefone') != None:
-            telefone = telefone_valido(kwargs.get('telefone'))
+            telefone = formatar_telefone(kwargs.get('telefone'))
             if not telefone:
                 raise ValueError(False, 'Telefone inválido!')
 
@@ -510,11 +514,13 @@ class ClienteController:
         if valida_senha != True:
             raise ValueError(valida_senha)
         
-        if (not nome) or 5 > len(nome) > 50 or nome.isnumeric():
+        if (not nome) or 5 > len(nome) > 50:
             raise ValueError('Nome inválido!')
+        if nome.isnumeric():
+            raise TypeError('O nome não pode ser um número!')
 
         if telefone != None:
-            telefone = telefone_valido(telefone)
+            telefone = formatar_telefone(telefone)
             if not telefone:
                 raise ValueError('Telefone inválido!')
 
@@ -556,7 +562,7 @@ class ClienteController:
                 raise ValueError(False, 'Nome inválido!')
 
         if kwargs.get('telefone') != None:
-            telefone = telefone_valido(kwargs.get('telefone'))
+            telefone = formatar_telefone(kwargs.get('telefone'))
             if not telefone:
                 raise ValueError(False, 'Telefone inválido!')
 
@@ -643,7 +649,7 @@ class CaixaController:
             raise ValueError('Já existe um caixa com este número!')
         
         if not valor_no_caixa.isnumeric():
-            raise ValueError('O valor no caixa deve ser um número!')
+            raise TypeError('O valor no caixa deve ser um número!')
         if valor_no_caixa < 0:
             raise ValueError('O valor no caixa não pode ser negativo!')
         

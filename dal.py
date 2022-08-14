@@ -192,7 +192,7 @@ class EstoqueDal:
             if index_categoria == 0:
                 continue
 
-            for index_produto, produto in categoria['produtos']:
+            for index_produto, produto in enumerate(categoria['produtos']):
                 if produto['id'] == id_produto:
                     if retorna_obj:
                         return (index_categoria, index_produto, 
