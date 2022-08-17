@@ -1,5 +1,6 @@
 import json
 from operator import itemgetter
+import datetime
 
 from model import Categoria, Funcionario, Produto, Fornecedor, Lote, Cliente, Venda, VendaOnline
 from utils import ServerError, IdError
@@ -744,11 +745,13 @@ class VendaDal:
     @staticmethod
     def cadastrar_venda(venda: Venda, codigo: json) -> bool:
         dado = {
-            "id_venda":       venda.id_venda,
-            "id_funcionario": venda.id_funcionario,
-            "produtos":       venda.lista_produtos,
-            "preco_total":    venda.preco_total,
-            "cpf_cliente":    venda.cpf_cliente
+            "id_venda":         venda.id_venda,
+            "data":             venda.data,
+            "id_funcionario":   venda.id_funcionario,
+            "tipo_funcionario": venda.tipo_funcionario,
+            "produtos":         venda.lista_produtos,
+            "preco_total":      venda.preco_total,
+            "cpf_cliente":      venda.cpf_cliente
         }
 	
         codigo['fisica'].append(dado)
@@ -762,6 +765,7 @@ class VendaDal:
     def cadastrar_venda_online(venda: VendaOnline, codigo: json) -> bool:
         dado = {
             "id_venda":    venda.id_venda,
+            "data":        venda.data,
             "produtos":    venda.lista_produtos,
             "preco_total": venda.preco_total,
             "id_cliente":  venda.id_cliente,
@@ -823,6 +827,108 @@ class VendaDal:
         VendaDal.salvar_arquivo(codigo)
         IdDal.remover_id('id_venda', id_venda)
         return True
+
+
+    @staticmethod
+    def coletar_dados(codigo_vendas: json, codigo_estoque: json,
+                      codigo_funcionario: json, chave=None, datas: tuple=None) -> tuple:
+        """
+        Retorna uma tupla com 3 valores:
+
+            * O primeiro é referente ao numero de vendas de cada produto, sendo um dicionário
+            com uma chave para cada categoria, e dentro outro dicionário com chave igual ao
+            id do produto e valor a quantidade de vendas do mesmo
+            * O segundo refere-se ao número de vendas de cada funcionario, sendo um dicionário
+            com uma chave para cada tipo de funcionario
+            * O terceiro tem uma chave para cada tipo de venda de acordo com o parâmetro
+            `chave`, e o valor sendo o lucro total desse tipo de venda
+
+        A tupla tem o formato::
+
+            (
+                {'nenhuma': {'1': 2}, 'frutas': {'0': 3}},
+                {'admins': {'0': 1}, 'funcionarios': {'0': 1}},
+                {'lucro_total_fisica': 50.0, 'lucro_total_online': 45.0}
+            )
+        
+        ---
+
+        Args:
+            codigo_vendas (json): arquivo das vendas
+            codigo_estoque (json): arquivo do estoque
+            codigo_funcionario (json): arquivo funcionarios
+            chave (str): pedir as vendas fisicas/online somente. default=None
+            datas (tuple): 2 instâncias de datetime.datetime . default=None
+        Returns:
+            tupla com os dados
+        """
+
+        # exclui a categoria 'vencidos', para não contar ela ;)
+        codigo_estoque.pop(0)
+
+        lucros = {}
+
+        pdt_mais_venderam = {c['categoria']: {str(p['id']): 0 for p in c['produtos']} for c in codigo_estoque}
+        func_mais_venderam = {
+            'admins': {str(f['id']): 0 for f in codigo_funcionario['admins']},
+            'funcionarios': {str(f['id']): 0 for f in codigo_funcionario['funcionarios']}
+        }
+
+        if chave == None or chave == 'fisica':
+            lucro_total_fisica = 0
+            for i, v in enumerate(codigo_vendas['fisica']):
+
+                # pega somente as vendas na data específica
+                if datas:
+                    data_venda = datetime.datetime.strptime(v['data'], '%d/%m/%Y')
+                    
+                    if not datas[0] <= data_venda <= datas[1]:
+                        continue
+
+                if v['tipo_funcionario'] == 'admins':
+                    func_mais_venderam['admins'][str(v['id_funcionario'])] += 1
+                else:
+                    func_mais_venderam['funcionarios'][str(v['id_funcionario'])] += 1
+                
+                for i, p in enumerate(v['produtos']):
+                    pdt_mais_venderam[p['nome_categoria']][str(p['id_produto'])] += 1
+
+                lucro_total_fisica += v['preco_total']
+            lucros['lucro_total_fisica'] = lucro_total_fisica
+                
+
+        if chave == None or chave == 'online':
+            lucro_total_online = 0
+            for i, v in enumerate(codigo_vendas['online']):
+            
+                # pega somente as vendas na data específica
+                if datas:
+                    data_venda = datetime.datetime.strptime(v['data'], '%d/%m/%Y')
+                    if not datas[0] <= data_venda <= datas[1]:
+                        continue
+
+                for i, p in enumerate(v['produtos']):
+                    pdt_mais_venderam[p['nome_categoria']][str(p['id_produto'])] += 1
+
+                lucro_total_online += v['preco_total']
+            lucros['lucro_total_online'] = lucro_total_online
+        
+        for k, v in pdt_mais_venderam.items():
+            pdt_mais_venderam[k] = dict(sorted(v.items(), key=itemgetter(1), reverse=True))
+        for k, v in func_mais_venderam.items():
+            func_mais_venderam[k] = dict(sorted(v.items(), key=itemgetter(1), reverse=True))
+
+        return (pdt_mais_venderam, func_mais_venderam, lucros)
+    
+
+    @staticmethod
+    def gerar_txt(relatorio: str):
+        try:
+            with open('relatorio_vendas.txt', 'w') as arq:
+                arq.write(relatorio)
+                return 'Arquivo gerado com sucesso!'
+        except:
+            raise ServerError('Não foi possível acessar o banco de dados!')
 
 
 # --------------------------------------------------

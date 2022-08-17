@@ -2,11 +2,13 @@
     "fisica": [
         {
             "id_venda": 5,
-            "id_funcionario": 1,
+            "data": "17/08/2022",
+            "id_funcionario": 0,
+            "tipo_funcionario": "admins",
             "produtos": [
                 {
                     "id_categoria": 1,
-                    "nome_categoria": "fruta",
+                    "nome_categoria": "frutas",
                     "id_produto": 0,
                     "nome_produto": "ma\u00e7a",
                     "quantidade": 5,
@@ -28,7 +30,9 @@
         },
         {
             "id_venda": 6,
+            "data": "17/08/2022",
             "id_funcionario": 0,
+            "tipo_funcionario": "funcionarios",
             "produtos": [
                 {
                     "id_categoria": 2,
@@ -47,10 +51,11 @@
     "online": [
         {
             "id_venda": 4,
+            "data": "17/08/2022",
             "produtos": [
                 {
                     "id_categoria": 1,
-                    "nome_categoria": "fruta",
+                    "nome_categoria": "frutas",
                     "id_produto": 0,
                     "nome_produto": "ma\u00e7a",
                     "quantidade": 5,

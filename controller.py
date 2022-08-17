@@ -74,9 +74,11 @@ class EstoqueController:
         codigo = CategoriaDal.ler_arquivo()
         codigo_estoque = EstoqueDal.ler_arquivo()
         
-        if len(nome) > 40 or len(marca) > 30:
+        if len(nome) > 40:
             raise ValueError('Este nome é grande demais')
-        elif not CategoriaDal.pesquisar_arquivo('id', id_categoria, codigo):
+        if len(marca) > 20:
+            raise ValueError('O nome da marca é grande demais!')
+        if not CategoriaDal.pesquisar_arquivo('id', id_categoria, codigo):
             raise IdError('Está categoria não existe!')
         
         index = EstoqueDal.pesquisar_categoria(codigo, produto.id_categoria)
@@ -106,9 +108,10 @@ class EstoqueController:
         if not CategoriaDal.pesquisar_arquivo('id', str(id_categoria_atual), codigo):
             raise IdError('Não existe uma categoria com esse ID', id_categoria_atual)
         
-        if kwargs.get('nome') != None and len(kwargs.get('nome')) > 40 or kwargs.get('marca') != None and len(kwargs.get('marca')) > 30:
-            raise ValueError('Este nome é grande demais')
-        
+        if kwargs.get('nome') != None and len(kwargs.get('nome')) > 40:
+            raise ValueError('Este nome é grande demais!')
+        if kwargs.get('marca') != None and len(kwargs.get('marca')) > 20:
+            raise ValueError('O nome da marca é grande demais!')
         
         return EstoqueDal.alterar_produto(id_produto, id_categoria_atual, codigo_estoque, **kwargs)
 
@@ -396,14 +399,19 @@ class FornecedorController:
 class FuncionarioController:
     @staticmethod
     def cadastrar_funcionario(nome: str, telefone: str, email: str, cpf: str,
-                              cargo: str, senha: str, admin=False, posicao=None) -> bool:
+                              cargo: str, senha: str, admin=False, posicao=None,
+                              login: LoginFuncionario=None) -> bool:
         codigo = FuncionarioDal.ler_arquivo()
         
         valida_senha = senha_valida(senha)
         if valida_senha != True:
             raise ValueError(valida_senha)
 
-        # aqui vamos verificar se a posicao do ADM que está logado não é menor do que a do ADM que ele quer cadastrar, para isso vamos receber um parâmetro a mais !!!
+        if admin:
+            if posicao > login.posicao:
+                raise ValueError('Não é possível cadastrar um ADM com a posição maior que a sua!')
+            elif posicao <= 0:
+                raise ValueError('Não é possível cadastrar um posição menor que 1')
         
         if (not nome) or 5 > len(nome) > 50:
             raise ValueError('Nome inválido!')
@@ -442,10 +450,15 @@ class FuncionarioController:
 
 
     @staticmethod
-    def alterar_funcionario(id_funcionario, admin=False, posicao=None, **kwargs) -> bool:
+    def alterar_funcionario(id_funcionario: int, admin=False, posicao=None,
+                            login: LoginFuncionario=None, **kwargs) -> bool:
         codigo = FuncionarioDal.ler_arquivo()
 
-        # aqui vamos verificar se a posicao do ADM que está logado não é menor do que a do ADM que ele quer alteracao, para isso vamos receber um parâmetro a mais !!!
+        if admin:
+            if posicao > login.posicao:
+                raise ValueError('Não é possível cadastrar um ADM com a posição maior que a sua!')
+            elif posicao <= 0:
+                raise ValueError('Não é possível cadastrar um posição menor que 1')
         
         if admin:
             if not FuncionarioDal.ler_funcionario(codigo, id_funcionario, admin=True):
@@ -485,12 +498,16 @@ class FuncionarioController:
 
     
     @staticmethod
-    def remover_funcionario(id_funcionario: int, admin=False) -> bool:
+    def remover_funcionario(id_funcionario: int, admin=False, login: LoginFuncionario=None) -> bool:
         codigo = FuncionarioDal.ler_arquivo()
         
         if admin:
-            if not FuncionarioDal.ler_funcionario(codigo, id_funcionario, admin=True):
+            adm = FuncionarioDal.ler_funcionario(codigo, id_funcionario, admin=True)
+            if not adm:
                 raise IdError('Não existe um ADM com este ID')
+            
+            if adm[1]['posicao'] > login.posicao:
+                raise ValueError('Não é possível remover um ADM com a posição maior que a sua!')
         else:
             if not FuncionarioDal.ler_funcionario(codigo, id_funcionario):
                 raise IdError('Não existe um funcionário com este ID')
@@ -788,8 +805,12 @@ class VendaController:
         
         VendaController.retirar_do_estoque(carrinho)
 
+        tipo_func = 'admins' if login.admin else 'funcionarios'
+
         id = IdDal.gerar_id('id_venda')
-        venda = Venda(id, login.id_funcionario, carrinho, cpf_cliente=cpf_cliente, lista_produtos=produtos)
+        data = datetime.date.today().strftime('%d/%m/%Y')
+        venda = Venda(id, data, login.id_funcionario, tipo_func, carrinho,
+                      cpf_cliente=cpf_cliente, lista_produtos=produtos)
         return (VendaDal.cadastrar_venda(venda, codigo_venda), troco)
     
 
@@ -818,8 +839,86 @@ class VendaController:
         VendaController.retirar_do_estoque(carrinho)
         
         id = IdDal.gerar_id('id_venda')
-        venda = VendaOnline(id, carrinho, login.id_cliente, login.cpf, lista_produtos=produtos)
+        data = datetime.date.today().strftime('%d/%m/%Y')
+        venda = VendaOnline(id, data, carrinho, login.id_cliente, login.cpf, lista_produtos=produtos)
         return (VendaDal.cadastrar_venda_online(venda, codigo_venda), troco)
+    
+
+    @staticmethod
+    def gerar_relatorio(chave=None, datas: tuple=None, gerar_txt=False):
+        """
+        Gera um relatório das vendas, use o parâmetro `chave` para especificar o tipo de venda:
+            * chave=None: relatório de todas as vendas
+            * chave='fisica': relatório das vendas fisicas
+            * chave='online': relatório das vendas online
+        
+        O parâmetro `datas` é opcional, caso passado ele deverá conter duas instâncias de
+        `datetime.datetime`, que serão o intervalo das datas na qual será procurada a venda.
+        Se nada for passado, ele irá pegar as vendas de todas as datas.
+        
+        ---
+
+        Args:
+            chave (str): pedir as vendas fisicas/online somente. default=None
+            datas (tuple): 2 instâncias de datetime.datetime . default=None
+            gerar_txt (bool): default=False
+        Returns:
+            gerar_txt=False: retorna o relatório em formato de str
+            gerar_txt=True: None
+        """
+        codigo_venda = VendaDal.ler_arquivo()
+        codigo_estoque = EstoqueDal.ler_arquivo()
+        codigo_funcionario = FuncionarioDal.ler_arquivo()
+
+        pdt, func, lucros = VendaDal.coletar_dados(codigo_venda, codigo_estoque.copy(),
+                                                   codigo_funcionario, chave, datas)
+
+        if datas:
+            d1 = datetime.datetime.strftime(datas[0], '%d/%m/%Y')
+            d2 = datetime.datetime.strftime(datas[1], '%d/%m/%Y') 
+            titulo = f'Relatório das Vendas entre {d1} e {d2}:\n\n{"="*100}\n\n'
+        else:
+            titulo = f'Relatório das Vendas:\n\n{"="*100}\n\n'
+
+        relatorio = ''
+        relatorio += titulo
+        relatorio += 'Vendas dos produtos:\n'
+
+        for k, v in pdt.items():
+            relatorio += f'\n{"-"*50}\n'
+            relatorio += f'\n    Categoria: {k.capitalize()}\n\n'
+            for key, value in v.items():
+                index_categoria, index_produto, p = EstoqueDal.ler_produto_por_id(
+                    int(key), codigo_estoque
+                    )
+                
+                relatorio += f'{"ID":4} | {"Nome":40} | {"Marca":20} | {"Quantidade Vendida"}\n\n'
+                relatorio += f'{str(p.id).zfill(4)} | {p.nome:40} | {p.marca:20} | {value:4}\n'
+            
+        relatorio += f'\n\n{"="*100}\n\n'
+        relatorio += 'Funcionários que Mais Venderam:\n'
+
+        for k, v in func.items():
+            relatorio += f'\n{"-"*50}\n'
+            relatorio += f'\n    {k.capitalize()}:\n\n'
+            for key, value in v.items():
+                index, f = FuncionarioDal.ler_funcionario(
+                    codigo_funcionario, int(key),
+                    admin=True if k == 'admins' else False, retorna_obj=True
+                    )
+                
+                relatorio += f'{"ID":4} | {"Nome":50} | {"Vendas":6}\n\n'
+                relatorio += f'{str(f.id).zfill(4)} | {f.nome:50} | {str(value).zfill(6):6}\n'
+        
+        relatorio += f'\n\n{"="*100}\n\n'
+        relatorio += 'Lucros:\n'
+
+        for k, v in lucros.items():
+            relatorio += f'\n{"-"*50}\n'
+            relatorio += f'\n    Lucro da Loja {k.split("_")[2].capitalize()}:\n\n'
+            relatorio += f'    R${v:.2f}\n'
+
+        return VendaDal.gerar_txt(relatorio) if gerar_txt else relatorio
 
 
 # --------------------------------------------------

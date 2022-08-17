@@ -59,11 +59,12 @@ class Cliente(Pessoa):
 
 
 class LoginFuncionario:
-    def __init__(self, id_funcionario: int, cpf: str, nome: str, admin=False):
+    def __init__(self, id_funcionario: int, cpf: str, nome: str, admin=False, posicao=None):
         self.id_funcionario = id_funcionario
         self.cpf = cpf
         self.nome = nome
         self.admin = admin
+        self.posicao = posicao
 
 
 class LoginCliente:
@@ -102,10 +103,12 @@ class Carrinho:
 
 
 class Venda:
-    def __init__(self, id_venda: int, id_funcionario: int, carrinho: Carrinho,
-                 cpf_cliente: str=None, lista_produtos :list=None):
+    def __init__(self, id_venda: int, data: str, id_funcionario: int, tipo_funcionario: str,
+                 carrinho: Carrinho, cpf_cliente: str=None, lista_produtos :list=None):
         self.id_venda = id_venda
+        self.data = data
         self.id_funcionario = id_funcionario
+        self.tipo_funcionario = tipo_funcionario
         self.produtos = carrinho.produtos
         self.preco_total = carrinho.preco_total
         self.cpf_cliente = cpf_cliente
@@ -115,9 +118,10 @@ class Venda:
 
 
 class VendaOnline:
-    def __init__(self, id_venda: int, carrinho: Carrinho, id_cliente: int,
+    def __init__(self, id_venda: int, data: str, carrinho: Carrinho, id_cliente: int,
                  cpf_cliente: str, lista_produtos: list=None):
         self.id_venda = id_venda
+        self.data = data
         self.produtos = carrinho.produtos
         self.preco_total = carrinho.preco_total
         self.id_cliente = id_cliente
