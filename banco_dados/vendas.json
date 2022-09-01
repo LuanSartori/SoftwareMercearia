@@ -1,36 +1,8 @@
 {
     "fisica": [
         {
-            "id_venda": 5,
-            "data": "17/08/2022",
-            "id_funcionario": 0,
-            "tipo_funcionario": "admins",
-            "produtos": [
-                {
-                    "id_categoria": 1,
-                    "nome_categoria": "frutas",
-                    "id_produto": 0,
-                    "nome_produto": "ma\u00e7a",
-                    "quantidade": 5,
-                    "preco_unidade": 6.0,
-                    "preco_total": 30.0
-                },
-                {
-                    "id_categoria": 0,
-                    "nome_categoria": "nenhuma",
-                    "id_produto": 1,
-                    "nome_produto": "banana",
-                    "quantidade": 3,
-                    "preco_unidade": 5.0,
-                    "preco_total": 15.0
-                }
-            ],
-            "preco_total": 45.0,
-            "cpf_cliente": "412.221.560-91"
-        },
-        {
-            "id_venda": 6,
-            "data": "17/08/2022",
+            "id_venda": 0,
+            "data": "31/08/2022",
             "id_funcionario": 0,
             "tipo_funcionario": "funcionarios",
             "produtos": [
@@ -38,43 +10,70 @@
                     "id_categoria": 2,
                     "nome_categoria": "frutas",
                     "id_produto": 0,
-                    "nome_produto": "ma\u00e7a",
+                    "nome_produto": "Ma\u00e7a",
+                    "quantidade": 15,
+                    "preco_unidade": 5.99,
+                    "preco_total": 89.85000000000001
+                },
+                {
+                    "id_categoria": 2,
+                    "nome_categoria": "frutas",
+                    "id_produto": 1,
+                    "nome_produto": "Banana Nanica Cacho",
+                    "quantidade": 50,
+                    "preco_unidade": 3.99,
+                    "preco_total": 199.5
+                },
+                {
+                    "id_categoria": 2,
+                    "nome_categoria": "frutas",
+                    "id_produto": 0,
+                    "nome_produto": "Ma\u00e7a",
                     "quantidade": 5,
-                    "preco_unidade": 1.0,
-                    "preco_total": 5.0
+                    "preco_unidade": 5.99,
+                    "preco_total": 29.950000000000003
                 }
             ],
-            "preco_total": 5.0,
-            "cpf_cliente": "412.221.560-91"
+            "preco_total": 319.3,
+            "cpf_cliente": null
         }
     ],
     "online": [
         {
-            "id_venda": 4,
-            "data": "17/08/2022",
+            "id_venda": 1,
+            "data": "31/08/2022",
             "produtos": [
                 {
-                    "id_categoria": 1,
+                    "id_categoria": 2,
                     "nome_categoria": "frutas",
                     "id_produto": 0,
-                    "nome_produto": "ma\u00e7a",
-                    "quantidade": 5,
-                    "preco_unidade": 6.0,
-                    "preco_total": 30.0
+                    "nome_produto": "Ma\u00e7a",
+                    "quantidade": 15,
+                    "preco_unidade": 5.99,
+                    "preco_total": 89.85000000000001
                 },
                 {
-                    "id_categoria": 0,
-                    "nome_categoria": "nenhuma",
+                    "id_categoria": 2,
+                    "nome_categoria": "frutas",
                     "id_produto": 1,
-                    "nome_produto": "banana",
-                    "quantidade": 3,
-                    "preco_unidade": 5.0,
-                    "preco_total": 15.0
+                    "nome_produto": "Banana Nanica Cacho",
+                    "quantidade": 50,
+                    "preco_unidade": 3.99,
+                    "preco_total": 199.5
+                },
+                {
+                    "id_categoria": 2,
+                    "nome_categoria": "frutas",
+                    "id_produto": 0,
+                    "nome_produto": "Ma\u00e7a",
+                    "quantidade": 5,
+                    "preco_unidade": 5.99,
+                    "preco_total": 29.950000000000003
                 }
             ],
-            "preco_total": 45.0,
-            "id_cliente": 1,
-            "cpf_cliente": "412.221.560-91"
+            "preco_total": 319.3,
+            "id_cliente": 2,
+            "cpf_cliente": "442.738.640-70"
         }
     ]
 }

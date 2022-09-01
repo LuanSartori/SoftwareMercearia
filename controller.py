@@ -1,3 +1,4 @@
+import snoop
 from operator import itemgetter
 import datetime
 
@@ -32,8 +33,8 @@ class CategoriaController():
         codigo = CategoriaDal.ler_arquivo()
         codigo_estoque = EstoqueDal.ler_arquivo()
 
-        index_categoria = CategoriaDal.pesquisar_arquivo('id', str(id_categoria), codigo)
-        if not index_categoria:
+        index_categoria = CategoriaDal.pesquisar_arquivo('id', id_categoria, codigo)
+        if index_categoria == None:
             raise IdError('Não existe uma categoria com esse ID', id_categoria)
 
         if CategoriaDal.pesquisar_arquivo('categoria', categoria, codigo):
@@ -52,7 +53,7 @@ class CategoriaController():
         codigo_estoque = EstoqueDal.ler_arquivo()
             
         index = CategoriaDal.pesquisar_arquivo('id', str(id_categoria), codigo)
-        if not index:
+        if index == None:
             raise IdError('Não existe uma categoria com esse ID', id_categoria)
         
         if id_categoria == 0:
@@ -69,7 +70,7 @@ class CategoriaController():
 
 class EstoqueController:
     @staticmethod
-    def cadastrar_produto(id_categoria: int, nome: str, marca: str, preco: float, validade: str,
+    def cadastrar_produto(id_categoria: int, nome: str, marca: str, preco: float,
                           quantidade: int=None, id_fornecedor: int=None) -> bool:
         codigo = CategoriaDal.ler_arquivo()
         codigo_estoque = EstoqueDal.ler_arquivo()
@@ -78,23 +79,24 @@ class EstoqueController:
             raise ValueError('Este nome é grande demais')
         if len(marca) > 20:
             raise ValueError('O nome da marca é grande demais!')
-        if not CategoriaDal.pesquisar_arquivo('id', id_categoria, codigo):
+        if CategoriaDal.pesquisar_arquivo('id', id_categoria, codigo) == None:
             raise IdError('Está categoria não existe!')
         
-        index = EstoqueDal.pesquisar_categoria(codigo, produto.id_categoria)
-        for p in codigo[index]['produtos']:
+        index = EstoqueDal.pesquisar_categoria(codigo, id_categoria)
+        for p in codigo_estoque[index]['produtos']:
             if p['nome'] == nome:
                 raise ValueError('Já existe um produto com esse nome')
 
         try:
-            validade_obj = datetime.datetime.strptime(validade, '%d/%m/%Y')
-            if validade_obj <= datetime.datetime.now():
-                raise ValueError('O produto já está vencido!')
+            for datas in quantidade:
+                validade_obj = datetime.datetime.strptime(datas[0], '%d/%m/%Y')
+                if validade_obj <= datetime.datetime.now():
+                    raise ValueError('O produto já está vencido!')
         except ValueError as arg:
             raise ValueError('Data de validade inválida!', arg)
 
         id = IdDal.gerar_id('id_produto')            
-        produto = Produto(id, id_categoria, nome, marca, preco, validade, quantidade, id_fornecedor)
+        produto = Produto(id, id_categoria, nome, marca, preco, quantidade, id_fornecedor)
         return EstoqueDal.cadastrar_produto(produto, codigo_estoque)
 
 
@@ -105,7 +107,7 @@ class EstoqueController:
 
         if not EstoqueDal.ler_produto_por_categoria(id_categoria_atual, id_produto, codigo_estoque, True):
             raise IdError('Não existe uma produto com esse ID', id_produto)
-        if not CategoriaDal.pesquisar_arquivo('id', str(id_categoria_atual), codigo):
+        if CategoriaDal.pesquisar_arquivo('id', str(id_categoria_atual), codigo) == None:
             raise IdError('Não existe uma categoria com esse ID', id_categoria_atual)
         
         if kwargs.get('nome') != None and len(kwargs.get('nome')) > 40:
@@ -124,7 +126,7 @@ class EstoqueController:
         
         if not EstoqueDal.ler_produto_por_categoria(id_categoria, id_produto, codigo_estoque, True):
             raise IdError('Não existe uma produto com esse ID', id_produto)
-        if not CategoriaDal.pesquisar_arquivo('id', str(id_categoria), codigo):
+        if CategoriaDal.pesquisar_arquivo('id', str(id_categoria), codigo) == None:
             raise IdError('Não existe uma categoria com esse ID', id_categoria)
 
         # validando se o produto está vinculado a um lote
@@ -418,7 +420,7 @@ class FuncionarioController:
         if nome.isnumeric():
             raise TypeError('O nome não pode ser um número!')
 
-        telefone = formatar_telefone(telefone)
+        telefone = formatar_telefone(telefone, True)
         if not telefone:
             raise ValueError('Telefone inválido!')
 
@@ -665,12 +667,10 @@ class CaixaController:
         if CaixaDal.ler_caixa(numero_caixa, codigo):
             raise ValueError('Já existe um caixa com este número!')
         
-        if not valor_no_caixa.isnumeric():
-            raise TypeError('O valor no caixa deve ser um número!')
         if valor_no_caixa < 0:
             raise ValueError('O valor no caixa não pode ser negativo!')
         
-        return CaixaDal.cadastrar_caixa(numero_caixa, valor_no_caixa)
+        return CaixaDal.cadastrar_caixa(numero_caixa, valor_no_caixa, codigo)
     
 
     @staticmethod
@@ -730,6 +730,7 @@ class CaixaController:
 
 
     @staticmethod
+    @snoop
     def passar_produto(id_produto: int, quantidade: int) -> ProdutoNoCarrinho:
         codigo_caixa = CaixaDal.ler_arquivo()
         codigo_estoque = EstoqueDal.ler_arquivo()
@@ -743,7 +744,7 @@ class CaixaController:
         if qnt < quantidade:
             raise ValueError('Não temos está quantidade de produtos!')
         
-        preco_total = qnt * produto['preco']        
+        preco_total = quantidade * produto['preco']        
         return ProdutoNoCarrinho(codigo_estoque[index_categoria]['id'],
                                  codigo_estoque[index_categoria]['categoria'],
                                  produto['id'], produto['nome'], quantidade, produto['preco'], preco_total)
@@ -769,7 +770,6 @@ class VendaController:
     def venda(login: LoginFuncionario, numero_caixa: int, carrinho: Carrinho,
               valor_recebido: float, cpf_cliente=None) -> tuple:
         codigo_caixa = CaixaDal.ler_arquivo()
-        codigo_estoque = EstoqueDal.ler_arquivo()
         codigo_venda = VendaDal.ler_arquivo()
         
         caixa = CaixaDal.ler_caixa(numero_caixa, codigo_caixa)
@@ -782,11 +782,11 @@ class VendaController:
                 raise ValueError('CPF inválido!')
         
         if valor_recebido < carrinho.preco_total:
-            raise ValueError('Dinheiro insuficiente!')
+            raise ValueError('Dinheiro insuficiente!', carrinho.preco_total - valor_recebido)
         
         troco = valor_recebido - carrinho.preco_total
         if troco > caixa['valor_no_caixa']:
-            raise ValueError('Caixa sem troco!')
+            raise ValueError('Caixa sem troco!', troco - caixa['valor_no_caixa'])
         
         valor_no_caixa = caixa['valor_no_caixa'] + carrinho.preco_total
         CaixaDal.alterar_caixa(numero_caixa, codigo_caixa, valor_no_caixa=valor_no_caixa)
@@ -816,11 +816,10 @@ class VendaController:
 
     @staticmethod
     def venda_online(login: LoginCliente, carrinho: Carrinho, valor_recebido: float) -> tuple:
-        codigo_estoque = EstoqueDal.ler_arquivo()
         codigo_venda = VendaDal.ler_arquivo()
 
         if valor_recebido < carrinho.preco_total:
-            raise ValueError('Dinheiro insuficiente!')
+            raise ValueError('Dinheiro insuficiente!', carrinho.preco_total - valor_recebido)
         
         troco = valor_recebido - carrinho.preco_total
         

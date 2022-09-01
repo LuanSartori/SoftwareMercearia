@@ -2,24 +2,24 @@
     "admins": [
         {
             "id": 0,
-            "cpf": 9999999999,
-            "nome": "Carlos",
-            "telefone": "+55 (19)912345678",
-            "email": "carlosverso@gmail.com",
-            "cargo": "chefe",
-            "senha": "11111112",
+            "cpf": "412.221.560-91",
+            "nome": "Mateus",
+            "telefone": "+55 (19)91234-5678",
+            "email": "mateuzin@gmail.com",
+            "cargo": "Chefe",
+            "senha": "$2b$12$W9Sd/5/ArfVdGIOfuEQkIeRsLDK5xkFVN9RZfS1a9b0muqU9pronC",
             "posicao": 5
         }
     ],
     "funcionarios": [
         {
             "id": 0,
-            "cpf": 9999999999,
-            "nome": "Fernando",
-            "telefone": "+55 (19)912345678",
-            "email": "fernado_touro@gmail.com",
-            "cargo": "gerente",
-            "senha": "$2b$12$KvYx.NGpI7fkM1vjbUohru45x0e0GUHI.5HqRSsXvUMQ22bdmlF8S"
+            "cpf": "173.610.770-48",
+            "nome": "Einsten",
+            "telefone": "+55 (19)98746-0180",
+            "email": "genio@gmail.com",
+            "cargo": "Gerente Auxiliar",
+            "senha": "$2b$12$AO9MGPGUdvVnpF7B40/WtuM6huMyadhX.im3wlGn2QYwWD5sJcBK."
         }
     ]
 }

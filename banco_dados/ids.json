@@ -1,10 +1,10 @@
 {
     "id_categoria": {
-        "novo_id": 2,
+        "novo_id": 3,
         "ids_vazios": []
     },
     "id_produto": {
-        "novo_id": 1,
+        "novo_id": 2,
         "ids_vazios": []
     },
     "id_fornecedor": {
@@ -24,13 +24,11 @@
         "ids_vazios": []
     },
     "id_cliente": {
-        "novo_id": 2,
-        "ids_vazios": [
-            1
-        ]
+        "novo_id": 3,
+        "ids_vazios": []
     },
     "id_venda": {
-        "novo_id": 7,
+        "novo_id": 2,
         "ids_vazios": []
     }
 }

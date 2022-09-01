@@ -2,6 +2,8 @@ from itertools import cycle
 import re
 import datetime
 import bcrypt
+import os
+import json
 
 
 class IdError(Exception):
@@ -291,14 +293,14 @@ def contar_quantidade(produto: dict) -> int:
     return quantidade
 
 
-def preco_total(*produtos) -> float:
+def preco_total(produtos: list) -> float:
     """
-    Recebe x instâncias de `ProdutoNoCarrinho` e retorna a soma dos preços
+    Recebe uma lista com instâncias de `ProdutoNoCarrinho` e retorna a soma dos preços
     
     ---
 
     Args:
-        *produtos: Instâncias de `ProdutoNoCarrinho`
+        produtos: Lista com instâncias de `ProdutoNoCarrinho`
     Returns:
         int do preço total de todos os produtos
     """
@@ -307,3 +309,41 @@ def preco_total(*produtos) -> float:
         preco_total += p.preco_total
     
     return preco_total
+
+
+# --------------------------------------------------
+# --------------------------------------------------
+
+
+def gerar_banco(banco: str):
+    lista_ids = ('id_categoria', 'id_produto', 'id_fornecedor', 'id_lote',
+                 'id_admin', 'id_funcionario', 'id_cliente', 'id_venda')
+    arquivos = (
+        ('caixas.json', []),
+        ('categorias.json', [{"id": 0, "categoria": "vencidos"},
+                             {"id": 1, "categoria": "nenhuma"}]),
+        ('clientes.json', []),
+        ('estoque.json', [{"id": 0, "categoria": "vencidos", "produtos": []},
+                          {"id": 1, "categoria": "nenhuma", "produtos": []}]),
+        ('fornecedores.json', [{"id": 0, "nome": "Nenhum", "telefone": "Nenhum",
+                                "email": "Nenhum", "cnpj": "Nenhum", "lotes": []}]), 
+        ('funcionarios.json', {'admins': [],
+                               'funcionarios': []}),
+        ('ids.json', { i: {'novo_id': 0, 'ids_vazios': []} for i in lista_ids}),
+        ('vendas.json', {'fisica': [], 'online': []})
+    )
+    # faz com que a próximo ID de categoria seja 2 porque já temos duas categorias padrão, e o fornecedor
+    arquivos[6][1]['id_categoria'].update(novo_id=2)
+    arquivos[6][1]['id_fornecedor'].update(novo_id=1)
+
+
+    if not os.path.exists(banco):
+        os.makedirs(banco)
+
+
+    for arquivo in arquivos:
+        caminho = os.path.join(banco, arquivo[0])
+        
+        if not os.path.exists(caminho):
+            with open(caminho, 'w') as arq:
+                json.dump(arquivo[1], arq, indent=4)

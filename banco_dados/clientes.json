@@ -1,28 +1,29 @@
 [
     {
         "id": 0,
-        "nome": "Lucas",
-        "cpf": 999999999,
-        "telefone": "+55 (19) 91234-5678",
-        "email": "lucas_o_sereio@gmail.com",
-        "senha": "LucasPeixeN3to",
-        "carrinho": [
-            {
-                "id_produto": 0,
-                "quantidade": 5,
-                "preco_unitario": 3.5,
-                "preco_total": 17.5,
-                "id_funcionario": 0
-            }
-        ]
+        "nome": "Marquinhos",
+        "cpf": "490.465.540-07",
+        "telefone": "+55 (25)88765-4321",
+        "email": "marcos_antonio@gmail.com",
+        "senha": "$2b$12$vqVDAkPctJO229Ay5yz3KufsYf7mDPz56OGT80zkNsvaFPL48FngG",
+        "carrinho": []
     },
     {
         "id": 1,
-        "nome": "Geraldo Picareta",
-        "cpf": "412.221.560-91",
-        "telefone": null,
-        "email": null,
-        "senha": "$2b$12$XvwB38UDGQzC6QOWDrmI.e6jPdPNWdTOzJ/2Q3XJjf6wWKUDC7j3e",
+        "nome": "Luquinhas",
+        "cpf": "692.954.800-66",
+        "telefone": "+55 (19)98567-3916",
+        "email": "lucas_sereio@gmail.com",
+        "senha": "$2b$12$NdHyfGkAAJCXhkun4va4Z.yXh6tkwikGfApNQfl0Xyd03TLidovr.",
+        "carrinho": []
+    },
+    {
+        "id": 2,
+        "nome": "Stanford",
+        "cpf": "442.738.640-70",
+        "telefone": "+55 (19)00000-0000",
+        "email": "escritor_dos_diarios@gmail.com",
+        "senha": "$2b$12$dMv.DCr/cF4OJEMI5m4b3e5cSP3X0hvucwD6ShWfZisK0145wZ19y",
         "carrinho": []
     }
 ]

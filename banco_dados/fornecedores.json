@@ -9,20 +9,20 @@
     },
     {
         "id": 1,
-        "nome": "Albert Einsten",
-        "telefone": "+55 (19) 91234-5678",
-        "email": "einsten_genio@gmail.com",
-        "cnpj": "9999999999",
+        "nome": "Peixonauta",
+        "telefone": "+55 (21)99999-9999",
+        "email": "peixe_pop@gmail.com",
+        "cnpj": "83.924.169/0001-65",
         "lotes": [
             {
                 "id_lote": 0,
-                "preco_lote": 600.0,
+                "preco_lote": 1500,
                 "id_produto": 0,
                 "id_categoria": 2,
-                "quantidade": 35,
+                "quantidade": 70,
                 "tempo": {
                     "intervalo": 7,
-                    "proximo": "19/08/2022"
+                    "proximo": "07/09/2022"
                 }
             }
         ]

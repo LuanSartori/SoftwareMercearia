@@ -1,6 +1,14 @@
 [
     {
         "numero_caixa": 1,
-        "valor_no_caixa": 179.95
+        "valor_no_caixa": 819.3
+    },
+    {
+        "numero_caixa": 2,
+        "valor_no_caixa": 250.0
+    },
+    {
+        "numero_caixa": 3,
+        "valor_no_caixa": 50.0
     }
 ]

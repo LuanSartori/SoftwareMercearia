@@ -6,6 +6,9 @@ from model import Categoria, Funcionario, Produto, Fornecedor, Lote, Cliente, Ve
 from utils import ServerError, IdError
 
 
+BANCO = 'banco_dados'
+
+
 class IdDal:
     @staticmethod
     def gerar_id(chave: str) -> int:
@@ -64,11 +67,14 @@ class CategoriaDal:
 
 
     @staticmethod
-    def pesquisar_arquivo(chave: str, valor: str, codigo: json) -> int:
+    def pesquisar_arquivo(chave: str, valor: str, codigo: json, retorna_id=False) -> int:
         for index, c in enumerate(codigo):
             if str( c[chave] ) == str(valor):
+
+                if retorna_id:
+                    return c['id']
                 return index
-        return False
+        return None
 
 
     @staticmethod
@@ -963,13 +969,16 @@ class CaixaDal:
 
 
     @staticmethod
-    def cadastrar_caixa(numero_caixa: int, valor_no_caixa: float) -> bool:
+    def cadastrar_caixa(numero_caixa: int, valor_no_caixa: float, codigo: json) -> bool:
         dado = {
             "numero_caixa":   numero_caixa,
             "valor_no_caixa": valor_no_caixa
         }
         
-        CaixaDal.salvar_arquivo(dado)
+        codigo.append(dado)
+        codigo = sorted(codigo, key=itemgetter('numero_caixa'))
+
+        CaixaDal.salvar_arquivo(codigo)
         return True
     
 
