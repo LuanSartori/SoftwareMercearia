@@ -75,7 +75,6 @@ def login():
 
 def menu_produtos(login_cliente: LoginCliente):
     produtos = []
-    print('PASSOU AQUI')
 
     while True:
         titulo('Selecione uma Categoria:', '=')

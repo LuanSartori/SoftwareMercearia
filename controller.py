@@ -1428,7 +1428,7 @@ class VendaController:
             print('-'*120)
             for i, venda in enumerate(codigo['fisica']):
                 admin = True if venda['tipo_funcionario'] == 'admins' else False
-                i, func = FuncionarioDal.ler_funcionario(codigo_funcionario, venda['id_funcionario'],
+                _, func = FuncionarioDal.ler_funcionario(codigo_funcionario, venda['id_funcionario'],
                 admin, True)
 
                 if datas:
