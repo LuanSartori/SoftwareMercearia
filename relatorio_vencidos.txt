@@ -1,0 +1,19 @@
+Relatório dos Produtos Vencidos:
+
+-------------------------------------------------------------------------------------------------------
+Categoria                      | Produto                                  | Vencido em     | Quantidade
+
+Frutas                         | Banana Nanica Cacho                      | 07/03/2020     |         80
+Frutas                         | Banana Nanica Cacho                      | 14/09/2020     |        155
+Frutas                         | Maça                                     | 14/09/2021     |         35
+Frutas                         | Maça                                     | 18/10/2021     |          5
+Frutas                         | Banana Nanica Cacho                      | 16/09/2022     |         20
+
+-------------------------------------------------------------------------------------------------------
+Produto                                  | Quantidade Total Vencida
+
+Maça                                     |                       40
+Banana Nanica Cacho                      |                      255
+
+-------------------------------------------------------------------------------------------------------
+Quantidade Total de Produtos Vencidos: 295

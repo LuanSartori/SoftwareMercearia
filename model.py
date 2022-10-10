@@ -43,11 +43,14 @@ class Lote():
 
 
 class Funcionario(Pessoa):
-    def __init__(self, id: int, nome: str, cpf: str, cargo: str, senha: str, telefone: str = None, email: str = None):
+    def __init__(self, id: int, nome: str, cpf: str, cargo: str, senha: str, telefone: str = None,
+                 email: str = None, admin: bool=False, posicao: int=None):
         super().__init__(nome, cpf, telefone, email)
         self.id = id
         self.cargo = cargo
         self.senha = senha
+        self.admin = admin
+        self.posicao = posicao
 
 
 class Cliente(Pessoa):
@@ -59,12 +62,18 @@ class Cliente(Pessoa):
 
 
 class LoginFuncionario:
-    def __init__(self, id_funcionario: int, cpf: str, nome: str, admin=False, posicao=None):
+    def __init__(self, id_funcionario: int, cpf: str, nome: str, admin: bool=False,
+                 posicao: int=None, caixa=None):
         self.id_funcionario = id_funcionario
         self.cpf = cpf
         self.nome = nome
         self.admin = admin
         self.posicao = posicao
+        self.caixa = caixa
+
+
+    def __str__(self) -> str:
+        return f'{[self.id_funcionario, self.cpf, self.nome, self.admin, self.posicao]}'
 
 
 class LoginCliente:
@@ -74,23 +83,26 @@ class LoginCliente:
         self.nome = nome
         self.telefone = telefone
         self.email = email
+    
+
+    def __str__(self) -> str:
+        return f'{[self.id_cliente, self.cpf, self.nome, self.telefone, self.email]}'
 
 
 class Caixa:
-    def __init__(self, numero_caixa: int, valor_no_caixa: float, id_funcionario: int, nome_funcionario: str):
+    def __init__(self, numero_caixa: int, valor_no_caixa: float):
         self.numero_caixa = numero_caixa
         self.valor_no_caixa = valor_no_caixa
-        self.id_funcionario = id_funcionario
-        self.nome_funcionario = nome_funcionario
 
 
 class ProdutoNoCarrinho:
     def __init__(self, id_categoria: int, nome_categoria, id_produto: int, nome_produto: str,
-                 quantidade: int, preco_unidade: float, preco_total: float):
+                 marca: str, quantidade: int, preco_unidade: float, preco_total: float):
         self.id_categoria = id_categoria
         self.nome_categoria = nome_categoria
         self.id_produto = id_produto
         self.nome_produto = nome_produto
+        self.marca = marca
         self.quantidade = quantidade
         self.preco_unidade = preco_unidade
         self.preco_total = preco_total
@@ -104,28 +116,24 @@ class Carrinho:
 
 class Venda:
     def __init__(self, id_venda: int, data: str, id_funcionario: int, tipo_funcionario: str,
-                 carrinho: Carrinho, cpf_cliente: str=None, lista_produtos :list=None):
+                 produtos_dict: list, preco_total: float, cpf_cliente: str=None, produtos_obj: list=None):
         self.id_venda = id_venda
         self.data = data
         self.id_funcionario = id_funcionario
         self.tipo_funcionario = tipo_funcionario
-        self.produtos = carrinho.produtos
-        self.preco_total = carrinho.preco_total
+        self.produtos_dict = produtos_dict
+        self.produtos_obj = produtos_obj
+        self.preco_total = preco_total
         self.cpf_cliente = cpf_cliente
-
-        # opcional: lista dos produtos (para armazenamento em json)
-        self.lista_produtos = lista_produtos
 
 
 class VendaOnline:
-    def __init__(self, id_venda: int, data: str, carrinho: Carrinho, id_cliente: int,
-                 cpf_cliente: str, lista_produtos: list=None):
+    def __init__(self, id_venda: int, data: str, produtos_dict: list, preco_total: float,
+                 id_cliente: int, cpf_cliente: str, produtos_obj: list=None):
         self.id_venda = id_venda
         self.data = data
-        self.produtos = carrinho.produtos
-        self.preco_total = carrinho.preco_total
+        self.produtos_dict = produtos_dict
+        self.produtos_obj = produtos_obj
+        self.preco_total = preco_total
         self.id_cliente = id_cliente
         self.cpf_cliente = cpf_cliente
-
-        # opcional: lista dos produtos (para armazenamento em json)
-        self.lista_produtos = lista_produtos

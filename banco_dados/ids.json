@@ -24,11 +24,11 @@
         "ids_vazios": []
     },
     "id_cliente": {
-        "novo_id": 3,
+        "novo_id": 4,
         "ids_vazios": []
     },
     "id_venda": {
-        "novo_id": 2,
+        "novo_id": 5,
         "ids_vazios": []
     }
 }

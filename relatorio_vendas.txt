@@ -1,29 +1,25 @@
-Relatório das Vendas entre 01/08/2022 e 20/08/2022:
+Relatï¿½rio das Vendas entre 10/09/2022 e 10/10/2022:
 
 ====================================================================================================
 
-Vendas dos produtos:
+Produtos Vendidos:
 
---------------------------------------------------
+    Nenhuma venda na Categoria: Nenhuma
 
-    Categoria: Nenhuma
-
-ID   | Nome                                     | Marca                | Quantidade Vendida
-
-0001 | Banana                                   | Nestle               |    2
 
 --------------------------------------------------
 
     Categoria: Frutas
 
-ID   | Nome                                     | Marca                | Quantidade Vendida
+ID   | Nome                                     | Marca                | Unidades Vendidas
 
-0000 | Maça | Pacote 5 Unidades                 | Nestle               |    3
+0000 | Maï¿½a                                     | Aurora               |               100
+0001 | Banana Nanica Cacho                      | Sadia                |                 5
 
 
 ====================================================================================================
 
-Funcionários que Mais Venderam:
+Funcionï¿½rios que Mais Venderam:
 
 --------------------------------------------------
 
@@ -31,7 +27,7 @@ Funcionários que Mais Venderam:
 
 ID   | Nome                                               | Vendas
 
-0000 | Carlos                                             | 000001
+0000 | Mateus                                             | 000001
 
 --------------------------------------------------
 
@@ -39,7 +35,7 @@ ID   | Nome                                               | Vendas
 
 ID   | Nome                                               | Vendas
 
-0000 | Fernando                                           | 000001
+0000 | Einsten                                            | 000000
 
 
 ====================================================================================================
@@ -50,10 +46,10 @@ Lucros:
 
     Lucro da Loja Fisica:
 
-    R$50.00
+    R$428.95
 
 --------------------------------------------------
 
     Lucro da Loja Online:
 
-    R$45.00
+    R$0.00

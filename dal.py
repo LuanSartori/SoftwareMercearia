@@ -2,8 +2,8 @@ import json
 from operator import itemgetter
 import datetime
 
-from model import Categoria, Funcionario, Produto, Fornecedor, Lote, Cliente, Venda, VendaOnline
-from utils import ServerError, IdError
+from model import Categoria, Funcionario, LoginFuncionario, Produto, Fornecedor, Lote, Cliente, Venda, VendaOnline
+from utils import ServerError, IdError, contar_quantidade, titulo
 
 
 BANCO = 'banco_dados'
@@ -279,10 +279,11 @@ class EstoqueDal:
     @staticmethod
     def transferir_vencido(produto: dict, quantidade: list, codigo: json) -> json:
         dado = {
-            'id':         produto['id'],
-            'nome':       produto['nome'],
-            'vencido_em': quantidade[0],
-            'quantidade': quantidade[1]
+            'id':           produto['id'],
+            'id_categoria': produto['id_categoria'],
+            'nome':         produto['nome'],
+            'vencido_em':   quantidade[0],
+            'quantidade':   quantidade[1]
         }
         
         # verifica se a data do produto vencido já não existe na categoria vencidos
@@ -298,7 +299,7 @@ class EstoqueDal:
 
     @staticmethod
     def remover_vencidos(codigo: json, id_produto=None) -> bool:
-        if not id_produto:
+        if id_produto == None:
             codigo[0]['produtos'] = []
         else:
             for i, p in enumerate(codigo[0]['produtos']):
@@ -307,6 +308,16 @@ class EstoqueDal:
         
         EstoqueDal.salvar_arquivo(codigo)
         return True
+    
+
+    @staticmethod
+    def gerar_relatorio_txt(relatorio: str):
+        try:
+            with open('relatorio_vencidos.txt', 'w') as arq:
+                arq.write(relatorio)
+                return 'Arquivo gerado com sucesso!'
+        except:
+            raise ServerError('Não foi possível acessar o banco de dados!')
 
 
 # --------------------------------------------------
@@ -370,7 +381,7 @@ class FornecedorDal:
 
     @staticmethod
     def alterar_fornecedor(id_fornecedor: int, codigo: json, **kwargs) -> tuple:
-        index, fornecedor = FornecedorDal.ler_fornecedor(codigo, id_fornecedor)
+        index, fornecedor = FornecedorDal.ler_fornecedor(codigo, id_fornecedor, False)
 
         alteracao = {
             "nome":     kwargs.get('nome'),
@@ -521,7 +532,9 @@ class FuncionarioDal:
                                                f['cargo'],
                                                f['senha'],
                                                f['telefone'],
-                                               f['email']))
+                                               f['email'],
+                                               True,
+                                               f['posicao']))
                     return (i, f)
         else:
             for i, f in enumerate(codigo['funcionarios']):
@@ -565,7 +578,7 @@ class FuncionarioDal:
     
 
     @staticmethod
-    def alterar_funcionario(id_funcionario: int, codigo: json, admin=False, posicao=None, **kwargs) -> bool:
+    def alterar_funcionario(id_funcionario: int, codigo: json, admin=False, **kwargs) -> bool:
         index, funcionario = FuncionarioDal.ler_funcionario(codigo, id_funcionario, admin=admin, retorna_obj=False)
 
         alteracao = {
@@ -574,10 +587,9 @@ class FuncionarioDal:
             "telefone": kwargs.get('telefone'),
             "email":    kwargs.get('email'),
             "cargo":    kwargs.get('cargo'),
-            "senha":    kwargs.get('senha')
+            "senha":    kwargs.get('senha'),
+            "posicao":  kwargs.get('posicao')
         }
-        if admin:
-            alteracao['posicao'] = posicao
         for chave, valor in alteracao.items():
             if valor != None:
                 funcionario[chave] = valor
@@ -728,11 +740,12 @@ class VendaDal:
                 if v['id_venda'] == id_venda:
                     
                     if retorna_obj:
-                        return (i, Venda(v['id_venda'],
+                        return (i, VendaOnline(v['id_venda'],
+                                        v['data'],
+                                        v['produtos'],
+                                        v['preco_total'],
                                         v['id_cliente'],
-                                        v['id_produto'],
-                                        v['quantidade'],
-                                        v['preco_unitario']))
+                                        v['cpf_cliente']))
                     return (i, v)
         else:
             for i, v in enumerate(codigo['fisica']):
@@ -740,10 +753,12 @@ class VendaDal:
                     
                     if retorna_obj:
                         return (i, Venda(v['id_venda'],
-                                        v['id_cliente'],
-                                        v['id_produto'],
-                                        v['quantidade'],
-                                        v['preco_unitario']))
+                                        v['data'],
+                                        v['id_funcionario'],
+                                        v['tipo_funcionario'],
+                                        v['produtos'],
+                                        v['preco_total'],
+                                        v['cpf_cliente']))
                     return (i, v)
         return False
 
@@ -755,7 +770,7 @@ class VendaDal:
             "data":             venda.data,
             "id_funcionario":   venda.id_funcionario,
             "tipo_funcionario": venda.tipo_funcionario,
-            "produtos":         venda.lista_produtos,
+            "produtos":         venda.produtos_dict,
             "preco_total":      venda.preco_total,
             "cpf_cliente":      venda.cpf_cliente
         }
@@ -772,7 +787,7 @@ class VendaDal:
         dado = {
             "id_venda":    venda.id_venda,
             "data":        venda.data,
-            "produtos":    venda.lista_produtos,
+            "produtos":    venda.produtos_dict,
             "preco_total": venda.preco_total,
             "id_cliente":  venda.id_cliente,
             "cpf_cliente": venda.cpf_cliente
@@ -897,7 +912,7 @@ class VendaDal:
                     func_mais_venderam['funcionarios'][str(v['id_funcionario'])] += 1
                 
                 for i, p in enumerate(v['produtos']):
-                    pdt_mais_venderam[p['nome_categoria']][str(p['id_produto'])] += 1
+                    pdt_mais_venderam[p['nome_categoria']][str(p['id_produto'])] += p['quantidade']
 
                 lucro_total_fisica += v['preco_total']
             lucros['lucro_total_fisica'] = lucro_total_fisica
@@ -928,7 +943,7 @@ class VendaDal:
     
 
     @staticmethod
-    def gerar_txt(relatorio: str):
+    def gerar_relatorio_txt(relatorio: str):
         try:
             with open('relatorio_vendas.txt', 'w') as arq:
                 arq.write(relatorio)

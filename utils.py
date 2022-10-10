@@ -302,7 +302,7 @@ def preco_total(produtos: list) -> float:
     Args:
         produtos: Lista com instâncias de `ProdutoNoCarrinho`
     Returns:
-        int do preço total de todos os produtos
+        float do preço total de todos os produtos
     """
     preco_total = 0
     for i, p in enumerate(produtos):
@@ -347,3 +347,41 @@ def gerar_banco(banco: str):
         if not os.path.exists(caminho):
             with open(caminho, 'w') as arq:
                 json.dump(arquivo[1], arq, indent=4)
+
+
+# --------------------------------------------------
+# --------------------------------------------------
+
+
+def titulo(txt: str, decorador: str='=', comprimento: int=None,
+           recuo: int=4, justificar: bool=False):
+    """
+    Printa um título decorado na tela, no formato::
+
+        ===========
+            Olá
+        ===========
+    
+    ---
+
+    Args:
+        txt (str): título a ser exibido
+        decorador (str): símbolo que vai ficar em cima e abaixo do título. default= '='
+        comprimento (int): comprimento do decorador. Caso não passado é o `len` do título. default=None
+        recuo (int): espaço do título até o começo da linha. default=4
+        justificar_recuo (bool): deixa o título no meio bem no meio do comprimento do decorador. default=False
+    """
+
+    print(decorador * (comprimento if comprimento else len(txt) + recuo * 2))
+    print((' ' * (comprimento // 2 - len(txt) // 2) + txt)) if justificar else print(' '*recuo + txt)
+    print(decorador * (comprimento if comprimento else len(txt) + recuo * 2))
+
+
+def listar_acoes(acoes: list):
+    for i, acao in enumerate(acoes):
+        print(f'{i+1} | {acao}')
+    print('-'*30)
+
+
+# --------------------------------------------------
+# --------------------------------------------------

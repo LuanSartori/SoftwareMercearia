@@ -2,7 +2,7 @@
     "fisica": [
         {
             "id_venda": 0,
-            "data": "31/08/2022",
+            "data": "31/08/2022 00:00:00",
             "id_funcionario": 0,
             "tipo_funcionario": "funcionarios",
             "produtos": [
@@ -11,6 +11,7 @@
                     "nome_categoria": "frutas",
                     "id_produto": 0,
                     "nome_produto": "Ma\u00e7a",
+                    "marca": "Aurora",
                     "quantidade": 15,
                     "preco_unidade": 5.99,
                     "preco_total": 89.85000000000001
@@ -20,6 +21,7 @@
                     "nome_categoria": "frutas",
                     "id_produto": 1,
                     "nome_produto": "Banana Nanica Cacho",
+                    "marca": "Sadia",
                     "quantidade": 50,
                     "preco_unidade": 3.99,
                     "preco_total": 199.5
@@ -29,6 +31,7 @@
                     "nome_categoria": "frutas",
                     "id_produto": 0,
                     "nome_produto": "Ma\u00e7a",
+                    "marca": "Aurora",
                     "quantidade": 5,
                     "preco_unidade": 5.99,
                     "preco_total": 29.950000000000003
@@ -36,18 +39,49 @@
             ],
             "preco_total": 319.3,
             "cpf_cliente": null
+        },
+        {
+            "id_venda": 2,
+            "data": "11/09/2022 00:00:00",
+            "id_funcionario": 0,
+            "tipo_funcionario": "admins",
+            "produtos": [
+                {
+                    "id_categoria": 2,
+                    "nome_categoria": "frutas",
+                    "id_produto": 1,
+                    "nome_produto": "Banana Nanica Cacho",
+                    "marca": "Sadia",
+                    "quantidade": 5,
+                    "preco_unidade": 3.99,
+                    "preco_total": 399.0
+                },
+                {
+                    "id_categoria": 2,
+                    "nome_categoria": "frutas",
+                    "id_produto": 0,
+                    "nome_produto": "Ma\u00e7a",
+                    "marca": "Aurora",
+                    "quantidade": 100,
+                    "preco_unidade": 5.99,
+                    "preco_total": 29.950000000000003
+                }
+            ],
+            "preco_total": 428.95,
+            "cpf_cliente": "49046554007"
         }
     ],
     "online": [
         {
             "id_venda": 1,
-            "data": "31/08/2022",
+            "data": "31/08/2022 00:00:00",
             "produtos": [
                 {
                     "id_categoria": 2,
                     "nome_categoria": "frutas",
                     "id_produto": 0,
                     "nome_produto": "Ma\u00e7a",
+                    "marca": "Aurora",
                     "quantidade": 15,
                     "preco_unidade": 5.99,
                     "preco_total": 89.85000000000001
@@ -57,6 +91,7 @@
                     "nome_categoria": "frutas",
                     "id_produto": 1,
                     "nome_produto": "Banana Nanica Cacho",
+                    "marca": "Sadia",
                     "quantidade": 50,
                     "preco_unidade": 3.99,
                     "preco_total": 199.5
@@ -66,6 +101,7 @@
                     "nome_categoria": "frutas",
                     "id_produto": 0,
                     "nome_produto": "Ma\u00e7a",
+                    "marca": "Aurora",
                     "quantidade": 5,
                     "preco_unidade": 5.99,
                     "preco_total": 29.950000000000003
@@ -74,6 +110,60 @@
             "preco_total": 319.3,
             "id_cliente": 2,
             "cpf_cliente": "442.738.640-70"
+        },
+        {
+            "id_venda": 3,
+            "data": "02/10/2022 10:03:21",
+            "produtos": [
+                {
+                    "id_categoria": 2,
+                    "nome_categoria": "frutas",
+                    "id_produto": 1,
+                    "nome_produto": "Banana Nanica Cacho",
+                    "quantidade": 5,
+                    "preco_unidade": 3.99,
+                    "preco_total": 19.950000000000003
+                },
+                {
+                    "id_categoria": 2,
+                    "nome_categoria": "frutas",
+                    "id_produto": 0,
+                    "nome_produto": "Ma\u00e7a",
+                    "quantidade": 10,
+                    "preco_unidade": 5.99,
+                    "preco_total": 59.900000000000006
+                }
+            ],
+            "preco_total": 79.85000000000001,
+            "id_cliente": 3,
+            "cpf_cliente": "308.527.490-15"
+        },
+        {
+            "id_venda": 4,
+            "data": "02/10/2022 10:10:39",
+            "produtos": [
+                {
+                    "id_categoria": 2,
+                    "nome_categoria": "frutas",
+                    "id_produto": 1,
+                    "nome_produto": "Banana Nanica Cacho",
+                    "quantidade": 10,
+                    "preco_unidade": 3.99,
+                    "preco_total": 39.900000000000006
+                },
+                {
+                    "id_categoria": 2,
+                    "nome_categoria": "frutas",
+                    "id_produto": 0,
+                    "nome_produto": "Ma\u00e7a",
+                    "quantidade": 50,
+                    "preco_unidade": 5.99,
+                    "preco_total": 299.5
+                }
+            ],
+            "preco_total": 339.4,
+            "id_cliente": 3,
+            "cpf_cliente": "308.527.490-15"
         }
     ]
 }

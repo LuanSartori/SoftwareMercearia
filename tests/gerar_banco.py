@@ -57,8 +57,8 @@ ClienteController.cadastrar_cliente('Stanford', '442.738.640-70', '4321drofnatS'
 # ------------------------------
 
 
-login_funcionario = Login.logar_funcionario('Einsten', 'Genio1234', False)
-login_cliente = Login.logar_cliente('Stanford', '4321drofnatS')
+login_funcionario = LoginController.logar_funcionario('Einsten', 'Genio1234', False)
+login_cliente = LoginController.logar_cliente('Stanford', '4321drofnatS')
 
 CaixaController.definir_caixa(1, login_funcionario, False)
 
@@ -80,7 +80,7 @@ carrinho.preco_total = preco_total(carrinho.produtos)
 print(VendaController.venda(login_funcionario, 1, carrinho, 347.55, None))
 print(VendaController.venda_online(login_cliente, carrinho, 332.50))
 
-VendaController.gerar_relatorio(None, None, False)
+VendaController.gerar_relatorio_vendas(None, None, False)
 
 
 # ------------------------------

@@ -25,5 +25,14 @@
         "email": "escritor_dos_diarios@gmail.com",
         "senha": "$2b$12$dMv.DCr/cF4OJEMI5m4b3e5cSP3X0hvucwD6ShWfZisK0145wZ19y",
         "carrinho": []
+    },
+    {
+        "id": 3,
+        "nome": "Marcos Ant\u00f4nio",
+        "cpf": "308.527.490-15",
+        "telefone": "+55 (19)98720-3053",
+        "email": "antoio_marcos@gmail.com",
+        "senha": "$2b$12$6KK/CDk.l5j23S017SjHW.kWBLLnLW1Dn8nJPDJCgePQ9mVfykOLS",
+        "carrinho": []
     }
 ]
